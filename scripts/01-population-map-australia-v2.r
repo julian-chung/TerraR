@@ -150,6 +150,7 @@ land_a <- 0.0       # Alpha for fully transparent land
 # Initialize the overlay array
 # Dimensions should match pop_mat (and aus_mask_mat)
 overlay_array <- array(0, dim = c(nrow(pop_mat), ncol(pop_mat), 4))
+overlay_array <- array(as.numeric(overlay_array), dim = dim(overlay_array))
 
 # Populate the array:
 # - If aus_mask_mat == 1 (land), use transparent overlay settings.
@@ -166,10 +167,20 @@ print("RGBA overlay array created for land/ocean distinction.")
 ### -----------------------
 
 cols <- rev(c(
-    "#0b1354", "#283680",
-    "#6853a9", "#c863b3"
+  "#0b1354",  # deep ocean
+  "#1d2c6b",  # dark indigo
+  "#324c89",  # mid purple-blue
+  "#4f5eaa",  # softened blue
+  "#8365b1",  # warm purple
+  "#a865b7",  # magenta tint
+  "#c863b3",  # bright pink
+  "#e09ed5"   # desaturated pastel
 ))
 texture <- grDevices::colorRampPalette(cols)(256)
+
+
+stopifnot(all(dim(pop_mat) == dim(overlay_array)[1:2]))
+
 
 rgl::close3d()
 
@@ -185,11 +196,16 @@ pop_mat |>
         shadowdepth = 0, # Shadow for spikes, not for the overlay
         shadow_darkness = .95,
         windowsize = c(1000, 800),
-        phi = 80,
-        zoom = .75,
-        theta = -15,
+        phi = 75,
+        zoom = .6,
+        theta = 0,
+        fov = 0,
         background = "white" # Ocean color is now handled by the overlay
     )
+
+# Adjust the camera if needed
+
+rayshader::render_camera(phi = 45, zoom = .6, theta = 0, fov = 0) # Example adjustment
 
 if (!dir.exists("outputs/images")) {
     dir.create("outputs/images", recursive = TRUE)
