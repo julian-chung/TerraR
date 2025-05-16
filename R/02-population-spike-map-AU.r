@@ -130,12 +130,16 @@ pop_mat_sqrt <- sqrt(pop_mat)
 summary(as.vector(pop_mat_sqrt))
 
 # Australian-themed colors
-cols <- rev(c(
-    "#00843D", "#FFCD00", 
-    "#FF8000", "#FF4500"
-))
+#cols <- rev(c(
+#    "#00843D", "#FFCD00", 
+#    "#FF8000", "#FF4500"
+#))
 
-texture <- grDevices::colorRampPalette(cols)(256)
+# texture <- grDevices::colorRampPalette(cols)(256)
+
+# Create a color palette for the texture
+texture <- grDevices::colorRampPalette(viridisLite::turbo(256))(256)
+
 
 # Create the initial 3D object using the transformed matrix
 pop_mat_sqrt |>
@@ -158,7 +162,7 @@ pop_mat_sqrt |>
 rayshader::render_camera(phi = 75, zoom = .7, theta = 0)
 
 # Define the output file path
-output_file <- "outputs/images/02-population-spike-map-AU.png"
+output_file <- "outputs/images/02-population-spike-map-AU-sqrt.png"
 
 # Render the high-quality image
 rayshader::render_highquality(
@@ -173,3 +177,45 @@ rayshader::render_highquality(
   height = height
 )
 
+# Try a power transformation to enhance visibility of smaller population centers
+
+pop_mat_power <- pop_mat^0.7 # Adjust the exponent as needed
+
+# Check the distribution of values to determine a reasonable Z scale
+summary(as.vector(pop_mat_power))
+
+# Create the initial 3D object using the transformed matrix
+pop_mat_power |>
+    rayshader::height_shade(texture = texture) |>
+    rayshader::plot_3d(
+        heightmap = pop_mat_power,
+        solid = F,
+        soliddepth = 0,
+        zscale = 0.25,  # We need to play with this value with the transformed data
+        shadowdepth = 0,
+        shadow_darkness = .95,
+        windowsize = c(800, 800),
+        phi = 65,
+        zoom = .65,
+        theta = -30,
+        background = "white"
+    )
+
+# Use this to adjust the view after building the window object
+rayshader::render_camera(phi = 75, zoom = .7, theta = 0)
+
+# Define the output file path
+output_file <- "outputs/images/02-population-spike-map-AU-power.png"
+
+# Render the high-quality image
+rayshader::render_highquality(
+  filename = output_file,
+  preview = TRUE,
+  light = TRUE,
+  lightdirection = 225,
+  lightaltitude = 60,
+  lightintensity = 400,
+  interactive = FALSE,
+  width = width,
+  height = height
+)
