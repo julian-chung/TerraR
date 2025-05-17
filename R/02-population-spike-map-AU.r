@@ -123,23 +123,71 @@ pop_mat <- pop_rast |>
     as("Raster") |>
     rayshader::raster_to_matrix()
 
-# Apply transformation to enhance visibility of smaller population centers
+# Australian-themed colors
+cols <- rev(c(
+    "#00843D", "#FFCD00", 
+    "#FF8000", "#FF4500"
+))
+
+texture <- grDevices::colorRampPalette(cols)(256)
+
+# Alternate colour palette for the texture
+# texture <- grDevices::colorRampPalette(viridisLite::turbo(256))(256)  # alternative color palette
+
+#######################################################
+# We will experiment with two transformations for the 
+# population data, a square root and a power transformation.
+# This should help us to enhance the visibility of smaller
+# cities and towns. 
+########################################################
+
+# 1. Log transformation
+pop_mat_log <- log(pop_mat + 1) # Adding 1 to avoid log(0)
+
+# Check the distribution of values to determine a reasonable Z scale
+summary(as.vector(pop_mat_log))
+
+# Create the initial 3D object using the transformed matrix
+pop_mat_log |>
+    rayshader::height_shade(texture = texture) |>
+    rayshader::plot_3d(
+        heightmap = pop_mat_log,
+        solid = F,
+        soliddepth = 0,
+        zscale = 0.25,  # We need to play with this value with the transformed data
+        shadowdepth = 0,
+        shadow_darkness = .95,
+        windowsize = c(800, 800),
+        phi = 65,
+        zoom = .65,
+        theta = -30,
+        background = "white"
+    )
+
+# Use this to adjust the view after building the window object
+rayshader::render_camera(phi = 75, zoom = .7, theta = 0)
+
+# Define the output file path
+output_file <- "outputs/images/02-population-spike-map-AU-log.png"
+
+# Render the high-quality image
+rayshader::render_highquality(
+  filename = output_file,
+  preview = TRUE,
+  light = TRUE,
+  lightdirection = 225,
+  lightaltitude = 60,
+  lightintensity = 400,
+  interactive = FALSE,
+  width = width,
+  height = height
+)
+
+# 2. Square root transformation
 pop_mat_sqrt <- sqrt(pop_mat) 
 
 # Check the distribution of values to determine a reasonable Z scale
 summary(as.vector(pop_mat_sqrt))
-
-# Australian-themed colors
-#cols <- rev(c(
-#    "#00843D", "#FFCD00", 
-#    "#FF8000", "#FF4500"
-#))
-
-# texture <- grDevices::colorRampPalette(cols)(256)
-
-# Create a color palette for the texture
-texture <- grDevices::colorRampPalette(viridisLite::turbo(256))(256)
-
 
 # Create the initial 3D object using the transformed matrix
 pop_mat_sqrt |>
@@ -148,7 +196,7 @@ pop_mat_sqrt |>
         heightmap = pop_mat_sqrt,
         solid = F,
         soliddepth = 0,
-        zscale = 0.9,  # We need to play with this value with the transformed data
+        zscale = 0.25,  # We need to play with this value with the transformed data
         shadowdepth = 0,
         shadow_darkness = .95,
         windowsize = c(800, 800),
@@ -177,9 +225,8 @@ rayshader::render_highquality(
   height = height
 )
 
-# Try a power transformation to enhance visibility of smaller population centers
-
-pop_mat_power <- pop_mat^0.7 # Adjust the exponent as needed
+# 3. Power transformation
+pop_mat_power <- pop_mat^0.7 # Adjust the exponent as needed 0.7 seems to work well
 
 # Check the distribution of values to determine a reasonable Z scale
 summary(as.vector(pop_mat_power))
@@ -219,3 +266,4 @@ rayshader::render_highquality(
   width = width,
   height = height
 )
+

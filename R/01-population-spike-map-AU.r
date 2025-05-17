@@ -121,6 +121,9 @@ pop_mat <- pop_rast |>
     as("Raster") |>
     rayshader::raster_to_matrix()
 
+# Summarize the population data
+summary(as.vector(pop_mat))
+
 # Australian-themed colors
 cols <- rev(c(
     "#00843D", "#FFCD00", 
