@@ -266,4 +266,3 @@ rayshader::render_highquality(
   width = width,
   height = height
 )
-

@@ -395,10 +395,9 @@ The population `sf` geometry is then converted into a raster grid, suitable for 
 
 *Summary of Population Mat*
 
-   Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-      1       1       2      53       5   13170 6615067 
+Min. 1st Qu. Median Mean 3rd Qu. Max. NA's 1 1 2 53 5 13170 6615067
 
-### **Minimum Refactoring Render**
+### Minimum Refactoring Render
 
 ![Population Spike Map of Australia](images/01-population-spike-map-AU.png){fig-alt="Version 1"}
 
@@ -526,7 +525,17 @@ height <- round((size * height_ratio), 0)
 get_population_raster <- function() {
     pop_rast <- stars::st_rasterize(
         pop_sf |>
-            dplyr::select(population, geom),l-map-AU_raw-population-raster-preview.png"
+            dplyr::select(population, geom),
+        nx = width, ny = height
+    )
+
+    return(pop_rast)
+}
+
+pop_rast <- get_population_raster()
+
+# Define output filename
+output_file <- "outputs/images/02-population-spike-map-AU_raw-population-raster-preview.png"
 
 # Open PNG device
 png(filename = output_file, width = 2000, height = 1500, res = 300)
@@ -555,7 +564,20 @@ texture <- grDevices::colorRampPalette(cols)(256)
 
 #######################################################
 # We will experiment with two transformations for the 
-# population data, a square root and a power transl
+# population data, a square root and a power transformation.
+# This should help us to enhance the visibility of smaller
+# cities and towns. 
+########################################################
+
+# 1. Log transformation
+pop_mat_log <- log(pop_mat + 1) # Adding 1 to avoid log(0)
+
+# Check the distribution of values to determine a reasonable Z scale
+summary(as.vector(pop_mat_log))
+
+# Create the initial 3D object using the transformed matrix
+pop_mat_log |>
+    rayshader::height_shade(texture = texture) |>
     rayshader::plot_3d(
         heightmap = pop_mat_log,
         solid = F,
@@ -602,7 +624,7 @@ pop_mat_sqrt |>
         heightmap = pop_mat_sqrt,
         solid = F,
         soliddepth = 0,
-        zscale = 0.9,  # We need to play with this value with the transformed data
+        zscale = 0.25,  # We need to play with this value with the transformed data
         shadowdepth = 0,
         shadow_darkness = .95,
         windowsize = c(800, 800),
@@ -642,7 +664,7 @@ pop_mat_power |>
     rayshader::height_shade(texture = texture) |>
     rayshader::plot_3d(
         heightmap = pop_mat_power,
-        solid = F,l
+        solid = F,
         soliddepth = 0,
         zscale = 0.25,  # We need to play with this value with the transformed data
         shadowdepth = 0,
@@ -675,37 +697,64 @@ rayshader::render_highquality(
 
 ```
 
-The initial geometry plot and the raster plot are the same as above. 
+The initial geometry plot and the raster plot are the same as above.
 
-For the purpose of demonstration we have kept the Z-Scale consistent throughout these plots. 
+For the purpose of demonstration we have kept the Z-Scale consistent throughout these plots.
 
 ::: {.callout-note collapse="true" title="What is `zscale` in rayshader?"}
-
 In `rayshader`, the `zscale` parameter controls **how "tall" or "flat" the spikes appear** in our 3D render. It’s a scaling factor that translates our data values (population, density, etc.) into vertical height, relative to the X-Y spacing of the matrix.
 
 Think of it like a **height exaggeration dial**:
 
-- **Smaller `zscale` → taller spikes**
-- **Larger `zscale` → flatter terrain**
+-   **Smaller `zscale` → taller spikes**
+-   **Larger `zscale` → flatter terrain**
 
 Internally: actual_z_height = value_in_matrix / zscale
 
 This means if we have a matrix where the largest value is 100, and we want the tallest spike to be 50 units high, our `zscale` should be `100 / 50 = 2`.
 
-**Typical guidelines**:
-- Raw population data → try `zscale = 100–500`
-- Log-transformed data → try `zscale = 0.1–0.5`
-- Square root or power transforms → `zscale = 0.2–5`
+**Typical guidelines**: - Raw population data → try `zscale = 100–500` - Log-transformed data → try `zscale = 0.1–0.5` - Square root or power transforms → `zscale = 0.2–5`
 
 Use `summary(as.vector(pop_mat_transformed))` to inspect the data range, then pick a `zscale` that gives a good spread of spike heights without distorting the map.
 
-_Note: `zscale` only affects **height geometry**, not **color scaling**. So it’s often used in conjunction with a separate transformation or color map to fine-tune visual contrast._
+*Note: `zscale` only affects **height geometry**, not **color scaling**. So it’s often used in conjunction with a separate transformation or color map to fine-tune visual contrast.*
+:::
+
+::: {.callout-note title="How to Pick a Z-Scale (Sort Of Scientifically)" collapse="true"}
+
+There’s no exact formula for `zscale`, but we *can* estimate a good starting point using our data summary.
+
+The `zscale` is a **divisor**, so higher values flatten spikes, and lower values exaggerate them.
+
+Some heuristics:
+- `zscale ≈ max(mat) / 100` if we want tallest spike ≈ 100 units
+- `zscale ≈ IQR(mat) / 10` to reveal top quartile structure
+- `zscale ≈ (max - median) / 10` for visual emphasis above the median
+
+Ultimately, it depends on the story we want to tell:  
+
+If we want to emphasize major cities: Flatten the tails.  
+If we want to reveal regional contrasts: Compress the top.
 
 :::
 
 Below are the results.
 
-### Log Transformed Population Mat
+### Log Transformed
+
+::: {.callout-warning collapse="true"}
+*Understanding Logarithmic Transformations*
+
+A logarithmic transformation (e.g. ( \log\_{10}(x + 1) )) is a **strong compression** tool used when there are extreme outliers. It transforms multiplicative differences into additive ones—making very large values much smaller and **visually flattening** steep spikes.
+
+However, in spike maps:
+
+-   Log transformations **can overcorrect**, making even major cities appear flat.
+-   You often need to set extremely low `zscale` values (e.g., 0.01) to see anything.
+-   Regional variation may increase, but **overall visual impact is lost**.
+
+This approach may be useful when your focus is on **low-population areas**, or if you want to **compare towns more evenly**, but it usually doesn’t preserve the dramatic effect that spike maps are designed to highlight.
+:::
 
 ```         
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
@@ -714,7 +763,21 @@ Below are the results.
 
 Z-Scale = 0.25
 
-### Squareroot Transformation
+### Square Root Transformation
+
+::: {.callout-note collapse="true"}
+*Understanding Square Root Transformations*
+
+A square root transformation (i.e. ( \sqrt{x} ) or ( x\^{0.5} )) is a gentle way to compress large values and boost lower ones. It’s often used when data has a **right-skewed distribution**—like population density—where most values are small, but a few (major metro areas) are extremely large.
+
+For population spike maps, applying a square root transformation helps:
+
+-   Reduce the **height disparity** between capital cities and rural towns.
+-   Reveal **regional contours** that would otherwise appear flat.
+-   Preserve the **visual narrative** of population concentration while improving readability.
+
+In practice, this is a good default when you want **subtle enhancement** without overwhelming changes to the data’s distribution.
+:::
 
 ```         
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
@@ -725,6 +788,16 @@ Z-Scale = 0.25
 
 ### Power Transformation
 
+::: {.callout-note collapse="true"}
+*Understanding Power Transformations*
+
+Power transformations apply an exponent ( \lambda ) to population values to reduce skew. When ( \lambda \< 1 ), high values (e.g. major cities) are compressed, while low values (regional centers) are gently lifted, allowing more visual differentiation across the density spectrum.
+
+For this spike map, we used a ( x\^{0.7} ) transformation, which softens the dominance of ultra-dense metro areas without losing their height entirely. This revealed more mid-density variation across regional Australia, such as inland towns and coastal urban fringes.
+
+This technique is a practical alternative to log transforms, which can over-flatten data.
+:::
+
 ```         
    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
     1.0     1.0     1.6     8.0     3.1   765.1 6615067 
@@ -732,6 +805,221 @@ Z-Scale = 0.25
 
 Z-Scale = 0.25
 
-## Colour Transformation
+### On Transforming the Data (or Not)
 
-The spine heights are now where we want them, but our colour mat isn't playing nicely with the huge spikes in the major population centers of Sydney and Melbourne. We need to
+The power transformation seems to be the most effective at revealing the regional variation in population density while still maintaining the dramatic effect of the spike map. The log transformation, while useful for reducing extreme values, tends to flatten the map too much, making it less visually appealing. The square root transformation provides a middle ground but doesn't quite capture the same level of detail as the power transformation.
+
+Australia’s population distribution is extreme. The vast majority of the continent is sparsely populated or completely uninhabited. Most people live in a few coastal cities, with Sydney and Melbourne absolutely dwarfing the rest. This isn’t a data error or an outlier problem, it’s the reality of Australia's population distribution. It's not a bug—it’s a feature. Statistically, this kind of data is heavily right-skewed. In other contexts, we might immediately opt for a log, square root, or even a Box-Cox transformation to normalize the distribution and make it more manageable. These are perfectly reasonable strategies when working with data that feeds into models, regressions, or any analysis where distributional assumptions matter. But in this context we're using the data for visual storytelling. The goal is not to minimize the skew, but to reveal it. The very thing that breaks our visualisations (the wild, vertical spike of Sydney) is essentially the entire point. It’s a visual cue for just how concentrated Australia's population is. Normalising that away risks flattening one of the most important takeaways from this visualisation. However, transforming the data can still be useful. We've seen that the the power transformation can make regional centres and smaller cities more visible, helping us avoid a sea of flatland with two impossible skyscrapers. But the trade off is that we are sacrifice relative contrast between the top end of the distribution. Sydney and Melbourne start to look more like Newcastle and Adelaide. There is no strictly “correct” answer in how to treat the population data, just different ways of framing the same data to tell different stories.
+
+## From Raw Population to Population Density
+
+Before diving deeper into tweaking spike maps, it's important to understand what the spike maps are actually showing, and how the choice of metric can dramatically affect what the final map communicates. 
+
+*How rayshader spike maps work*
+
+When we use `rayshader::plot_3d()` with a raster matrix (like population counts), each individual cell in the matrix is rendered as a tile on a 3D surface, with it's heigh on the z-asix corresponding to the value in that tile. 
+
+In our case, each tile represents a 400m x 400m square of land (0.16 km²), and the number in that tile is the raw population count for that square. So the "spikes" in the final map are simply how many people live in that specific 0.16 km² area. Tall spikes = high population count in a small fixed area — which, if you think about it, is also population density in disguise. 
+
+This means areas like the Sydney CBD, where thousands of people live in high-rise apartments stacked within just a few blocks, generate enormous vertical skyscrapers in the spike map. Suburbs like Parramatta, where people live in detached homes with yards, generate shorter, flatter spikes. And rural areas — vast tracts of land with very few people — barely rise off the ground.
+
+*Why density still matters*
+
+Even though each spike already reflects the number of people per 0.16 km² (i.e., density), that relationship is implicit. The raw values don't say "1,500 people per km²" — they just say "2400 people live here." So if you want to make comparisons with other datasets, interpret values directly, or rescale them using more sophisticated techniques (like power transformations), it can be useful to explicitly calculate population density by dividing the raw counts by the area.
+
+More importantly, density as a concept shifts the visual narrative:
+
+- Raw population tells us how many people live somewhere.
+
+- Density tells us how tightly packed they are.
+
+Consider two tiles that each contain 10,000 people:
+
+- One is an inner-city apartment block covering 0.16 km².
+
+- The other is a large, spread-out suburb spanning many square kilometres (i.e., across multiple tiles).
+
+The raw population spikes may look similar. But in a density-based map, the city core explodes upward while the suburb flattens out — highlighting the intensity of urban living, not just raw headcount.
+
+So, while rayshader’s tile-based spike map is already doing a kind of “visual density,” formalizing it helps with interpretation, flexibility, and cross-comparison — especially as we experiment with scaling, transformations, and thematic overlays.
+
+```{r}
+# Population Density Spike Map of Australia
+
+# libraries we need
+libs <- c(
+  "tidyverse", "R.utils",
+  "httr", "sf", "stars",
+  "rayshader"
+)
+
+# install missing libraries
+installed_libs <- libs %in% rownames(installed.packages())
+if (any(installed_libs == F)) {
+  install.packages(libs[!installed_libs])
+}
+
+# load libraries
+invisible(lapply(libs, library, character.only = T))
+
+# Ensure the output directory exists
+if (!dir.exists("outputs/images")) {
+  dir.create("outputs/images", recursive = TRUE)
+}
+
+### 1. LOAD DATA
+### -------------
+# Using local file instead of downloading
+file_path <- "data/raw/kontur_population_AU_20231101.gpkg"
+
+# Australia-appropriate projection
+# Lambert Conformal Conic for Australia (GDA2020 / Australia Albers)
+crsAU <- "+proj=aea +lat_0=0 +lon_0=132 +lat_1=-18 +lat_2=-36 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+
+get_population_data <- function() {
+  pop_df <- sf::st_read(file_path) |>
+    sf::st_transform(crs = crsAU)
+  
+  return(pop_df)
+}
+
+pop_sf <- get_population_data()
+
+# Define file path
+output_file <- "outputs/images/03-population-density-spike-map-AU_raw-population-points.png"
+
+head(pop_sf)
+
+# Save the plot
+ggplot() +
+  geom_sf(data = pop_sf, color = "grey10", fill = "grey10") +
+  theme_void() +  # or theme_classic() if you want axes
+  theme(
+    panel.background = element_rect(fill = "white", color = NA),
+    plot.background = element_rect(fill = "white", color = NA)
+  )
+
+ggsave(filename = output_file, width = 10, height = 8, dpi = 300, bg = "white")
+
+### 3. SHP TO RASTER
+### ----------------
+
+bb <- sf::st_bbox(pop_sf)
+
+get_raster_size <- function() {
+  height <- sf::st_distance(
+    sf::st_point(c(bb[["xmin"]], bb[["ymin"]])),
+    sf::st_point(c(bb[["xmin"]], bb[["ymax"]]))
+  )
+  width <- sf::st_distance(
+    sf::st_point(c(bb[["xmin"]], bb[["ymin"]])),
+    sf::st_point(c(bb[["xmax"]], bb[["ymin"]]))
+  )
+  
+  if (height > width) {
+    height_ratio <- 1
+    width_ratio <- width / height
+  } else {
+    width_ratio <- 1
+    height_ratio <- height / width
+  }
+  
+  return(list(width_ratio, height_ratio))
+}
+width_ratio <- get_raster_size()[[1]]
+height_ratio <- get_raster_size()[[2]]
+
+size <- 3000
+width <- round((size * width_ratio), 0)
+height <- round((size * height_ratio), 0)
+
+get_population_raster <- function() {
+  pop_rast <- stars::st_rasterize(
+    pop_sf |>
+      dplyr::select(population, geom),
+    nx = width, ny = height
+  )
+  
+  return(pop_rast)
+}
+
+pop_rast <- get_population_raster()
+
+# Define output filename
+output_file <- "outputs/images/03-population-density-spike-map-AU_raw-population-raster-preview.png"
+
+# Open PNG device
+png(filename = output_file, width = 2000, height = 1500, res = 300)
+
+# Plot the raster
+plot(pop_rast, main = "Population Raster", axes = FALSE, box = FALSE)
+
+# Close the device
+dev.off()
+
+# Convert the stars object to a matrix for rayshader
+pop_mat <- pop_rast |>
+  as("Raster") |>
+  rayshader::raster_to_matrix()
+
+# Australian-themed colors
+cols <- c(
+  "#00843D", "#FFCD00", 
+  "#FF8000", "#FF4500"
+)
+
+texture <- grDevices::colorRampPalette(cols)(2048)
+
+# True Density transformation
+# This is a more complex transformation that takes into account the density of points
+# in the raster. It can be useful for visualizing population density.
+
+# Calculate the density of points in the raster
+cell_area_km2 <- 0.16
+density_raster <- pop_mat / cell_area_km2 # Now we have density in people per km2
+
+# Check the distribution of values to determine a reasonable Z scale
+summary(as.vector(density_raster))
+
+# Create the initial 3D object using the density raster
+density_raster |>
+  rayshader::height_shade(texture = texture) |>
+  rayshader::plot_3d(
+    heightmap = density_raster,
+    solid = F,
+    soliddepth = 0,
+    zscale = 5,  # We need to play with this value with the transformed data
+    shadowdepth = 0,
+    shadow_darkness = .95,
+    windowsize = c(800, 800),
+    phi = 65,
+    zoom = .65,
+    theta = -30,
+    background = "white"
+  )
+
+# Use this to adjust the view after building the window object
+rayshader::render_camera(phi = 65, zoom = .4, theta = 0)
+
+# Define the output file path
+output_file <- "outputs/images/03-population-density-spike-map-AU.png"
+
+# Render the high-quality image
+rayshader::render_highquality(
+  filename = output_file,
+  preview = TRUE,
+  light = TRUE,
+  lightdirection = 225,
+  lightaltitude = 60,
+  lightintensity = 400,
+  interactive = FALSE,
+  width = width,
+  height = height
+)
+
+# Close the 3D device
+rgl::close3d()
+
+```
+
+
