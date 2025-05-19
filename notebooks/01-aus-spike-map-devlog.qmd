@@ -721,21 +721,16 @@ Use `summary(as.vector(pop_mat_transformed))` to inspect the data range, then pi
 :::
 
 ::: {.callout-note title="How to Pick a Z-Scale (Sort Of Scientifically)" collapse="true"}
-
 There’s no exact formula for `zscale`, but we *can* estimate a good starting point using our data summary.
 
 The `zscale` is a **divisor**, so higher values flatten spikes, and lower values exaggerate them.
 
-Some heuristics:
-- `zscale ≈ max(mat) / 100` if we want tallest spike ≈ 100 units
-- `zscale ≈ IQR(mat) / 10` to reveal top quartile structure
-- `zscale ≈ (max - median) / 10` for visual emphasis above the median
+Some heuristics: - `zscale ≈ max(mat) / 100` if we want tallest spike ≈ 100 units - `zscale ≈ IQR(mat) / 10` to reveal top quartile structure - `zscale ≈ (max - median) / 10` for visual emphasis above the median
 
-Ultimately, it depends on the story we want to tell:  
+Ultimately, it depends on the story we want to tell:
 
-If we want to emphasize major cities: Flatten the tails.  
+If we want to emphasize major cities: Flatten the tails.\
 If we want to reveal regional contrasts: Compress the top.
-
 :::
 
 Below are the results.
@@ -813,13 +808,13 @@ Australia’s population distribution is extreme. The vast majority of the conti
 
 ## From Raw Population to Population Density
 
-Before diving deeper into tweaking spike maps, it's important to understand what the spike maps are actually showing, and how the choice of metric can dramatically affect what the final map communicates. 
+Before diving deeper into tweaking spike maps, it's important to understand what the spike maps are actually showing, and how the choice of metric can dramatically affect what the final map communicates.
 
 *How rayshader spike maps work*
 
-When we use `rayshader::plot_3d()` with a raster matrix (like population counts), each individual cell in the matrix is rendered as a tile on a 3D surface, with it's heigh on the z-asix corresponding to the value in that tile. 
+When we use `rayshader::plot_3d()` with a raster matrix (like population counts), each individual cell in the matrix is rendered as a tile on a 3D surface, with it's heigh on the z-asix corresponding to the value in that tile.
 
-In our case, each tile represents a 400m x 400m square of land (0.16 km²), and the number in that tile is the raw population count for that square. So the "spikes" in the final map are simply how many people live in that specific 0.16 km² area. Tall spikes = high population count in a small fixed area — which, if you think about it, is also population density in disguise. 
+In our case, each tile represents a 400m x 400m square of land (0.16 km²), and the number in that tile is the raw population count for that square. So the "spikes" in the final map are simply how many people live in that specific 0.16 km² area. Tall spikes = high population count in a small fixed area — which, if you think about it, is also population density in disguise.
 
 This means areas like the Sydney CBD, where thousands of people live in high-rise apartments stacked within just a few blocks, generate enormous vertical skyscrapers in the spike map. Suburbs like Parramatta, where people live in detached homes with yards, generate shorter, flatter spikes. And rural areas — vast tracts of land with very few people — barely rise off the ground.
 
@@ -829,15 +824,15 @@ Even though each spike already reflects the number of people per 0.16 km² (i.e.
 
 More importantly, density as a concept shifts the visual narrative:
 
-- Raw population tells us how many people live somewhere.
+-   Raw population tells us how many people live somewhere.
 
-- Density tells us how tightly packed they are.
+-   Density tells us how tightly packed they are.
 
 Consider two tiles that each contain 10,000 people:
 
-- One is an inner-city apartment block covering 0.16 km².
+-   One is an inner-city apartment block covering 0.16 km².
 
-- The other is a large, spread-out suburb spanning many square kilometres (i.e., across multiple tiles).
+-   The other is a large, spread-out suburb spanning many square kilometres (i.e., across multiple tiles).
 
 The raw population spikes may look similar. But in a density-based map, the city core explodes upward while the suburb flattens out — highlighting the intensity of urban living, not just raw headcount.
 
@@ -1022,4 +1017,6 @@ rgl::close3d()
 
 ```
 
+## State Level Population Spike Maps
 
+Next step was to create state level population spike maps.

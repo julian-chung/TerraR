@@ -12,10 +12,12 @@ renv/staging/
 # data
 data/raw/
 data/private/
+data/processed/
+data/boundaries/
 
 # output
 outputs/
-figures/
+outputs/images/
 *.png
 *.pdf
 *.mp4
