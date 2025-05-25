@@ -60,23 +60,27 @@ filtered_states <- aus_states |>
 # Create a list of state geometries by name (using the filtered dataframe)
 state_boundaries <- split(filtered_states, filtered_states$STE_NAME21)
 
-# # Create a named list of clipped population data per state
-# state_pops <- lapply(state_boundaries, function(state_geom) {
-#   # Get the geometry column name for state_geom
-#   state_geom_col <- attr(state_geom, "sf_column")
+# Create a named list of clipped population data per state
+###### WARNING: This operation literally takes several hours to run
+###### It is recommended to save the results after the first run, then comment out this function, and load the saved results for future tasks as required
+###### There is likely a more efficient way to do this, but I haven't found it yet
+
+ state_pops <- lapply(state_boundaries, function(state_geom) {
+   # Get the geometry column name for state_geom
+   state_geom_col <- attr(state_geom, "sf_column")
   
-#   # Select only necessary columns from pop_sf
-#   pop_subset <- pop_sf %>% dplyr::select(population, geom)
+   # Select only necessary columns from pop_sf
+   pop_subset <- pop_sf %>% dplyr::select(population, geom)
   
-#   # Select only necessary columns from state_geom
-#   state_subset <- state_geom %>% dplyr::select(STE_NAME21, all_of(state_geom_col))
+   # Select only necessary columns from state_geom
+   state_subset <- state_geom %>% dplyr::select(STE_NAME21, all_of(state_geom_col))
   
 #   # Perform intersection with reduced attributes
-#   sf::st_intersection(pop_subset, state_subset)
-# })
+   sf::st_intersection(pop_subset, state_subset)
+ })
 
-# Optional: Save the resulting list for future use (recommended)
-# saveRDS(state_pops, file = "data/processed/state_pops.rds")
+# IMPORTANT: Save the resulting list for future use (recommended)
+saveRDS(state_pops, file = "data/processed/state_pops.rds")
 
 # Later, we can reload with:
 state_pops <- readRDS("data/processed/state_pops.rds")
@@ -148,7 +152,7 @@ nsw_mat_power <- nsw_mat^0.7
 # NSW visualization settings
 nsw_zscale <- 10        # Adjust as needed
 nsw_phi <- 65           # Elevation angle
-nsw_theta <- -30        # Azimuth angle
+nsw_theta <- 10        # Azimuth angle
 nsw_zoom <- 0.65        # Zoom level
 
 # Create the 3D object for NSW
@@ -168,8 +172,8 @@ nsw_mat |>          # We can use any transformation here
     background = "white"
   )
 
-# Adjust view interactively - modify values as needed
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above interactively - modify values as needed
+rayshader::render_camera(phi = 65, zoom = 0.65, theta = 10)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-NSW-working.png"
@@ -234,7 +238,7 @@ vic_mat_power <- vic_mat^0.7
 # Victoria visualization settings
 vic_zscale <- 10        # Adjust as needed
 vic_phi <- 65           # Elevation angle
-vic_theta <- -30        # Azimuth angle
+vic_theta <- -10        # Azimuth angle
 vic_zoom <- 0.65        # Zoom level
 
 # Create the 3D object for Victoria
@@ -254,8 +258,8 @@ vic_mat |>          # We can use any transformation here
     background = "white"
   )
 
-# Adjust view
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above
+rayshader::render_camera(phi = 65, zoom = 0.65, theta = 0)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-VIC.png"
@@ -319,8 +323,8 @@ qld_mat_power <- qld_mat^0.7
 
 # Queensland visualization settings
 qld_zscale <- 10        # Adjust as needed
-qld_phi <- 65           # Elevation angle
-qld_theta <- -30        # Azimuth angle
+qld_phi <- 60           # Elevation angle
+qld_theta <- -15        # Azimuth angle
 qld_zoom <- 0.65        # Zoom level
 
 # Create the 3D object for Queensland
@@ -340,8 +344,8 @@ qld_mat |>          # We can use any transformation here
     background = "white"
   )
 
-# Adjust view
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above
+rayshader::render_camera(phi = 55, zoom = 0.68, theta = -20)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-QLD.png"
@@ -426,8 +430,8 @@ sa_mat |>           # We can use any transformation here
     background = "white"
   )
 
-# Adjust view
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above
+rayshader::render_camera(phi = 65, zoom = 0.6, theta = -10)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-SA.png"
@@ -491,9 +495,9 @@ wa_mat_power <- wa_mat^0.7
 
 # Western Australia visualization settings
 wa_zscale <- 10        # Adjust as needed
-wa_phi <- 65           # Elevation angle
-wa_theta <- -30        # Azimuth angle
-wa_zoom <- 0.65        # Zoom level
+wa_phi <- 60           # Elevation angle
+wa_theta <- 0        # Azimuth angle
+wa_zoom <- 0.75        # Zoom level
 
 # Create the 3D object for Western Australia
 wa_mat |>           # We can use any transformation here
@@ -512,8 +516,8 @@ wa_mat |>           # We can use any transformation here
     background = "white"
   )
 
-# Adjust view
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above
+rayshader::render_camera(phi = 60, zoom = 0.75, theta = -0)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-WA.png"
@@ -577,9 +581,9 @@ tas_mat_power <- tas_mat^0.7
 
 # Tasmania visualization settings
 tas_zscale <- 10        # Adjust as needed
-tas_phi <- 65           # Elevation angle
-tas_theta <- -30        # Azimuth angle
-tas_zoom <- 0.65        # Zoom level
+tas_phi <- 45           # Elevation angle
+tas_theta <- 0        # Azimuth angle
+tas_zoom <- 0.7        # Zoom level
 
 # Create the 3D object for Tasmania
 tas_mat |>          # We can use any transformation here
@@ -598,8 +602,8 @@ tas_mat |>          # We can use any transformation here
     background = "white"
   )
 
-# Adjust view
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above
+rayshader::render_camera(phi = 45, zoom = 0.7, theta = 0)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-TAS.png"
@@ -663,8 +667,8 @@ nt_mat_power <- nt_mat^0.7
 
 # Northern Territory visualization settings
 nt_zscale <- 10        # Adjust as needed
-nt_phi <- 65           # Elevation angle
-nt_theta <- -30        # Azimuth angle
+nt_phi <- 55           # Elevation angle
+nt_theta <- 0        # Azimuth angle
 nt_zoom <- 0.65        # Zoom level
 
 # Create the 3D object for Northern Territory
@@ -684,8 +688,8 @@ nt_mat |>
     background = "white"
   )
 
-# Adjust view
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above
+rayshader::render_camera(phi = 55, zoom = 0.75, theta = 0)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-NT.png"
@@ -749,9 +753,9 @@ act_mat_power <- act_mat^0.7
 
 # ACT visualization settings
 act_zscale <- 10        # Adjust as needed
-act_phi <- 65           # Elevation angle
-act_theta <- -30        # Azimuth angle
-act_zoom <- 0.65        # Zoom level
+act_phi <- 60           # Elevation angle
+act_theta <- 0        # Azimuth angle
+act_zoom <- 0.7        # Zoom level
 
 # Create the 3D object for ACT
 act_mat |>          # Changed from act_mat_log to act_mat
@@ -770,8 +774,8 @@ act_mat |>          # Changed from act_mat_log to act_mat
     background = "white"
   )
 
-# Adjust view
-rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
+# Adjust view - Remember to go back and update the camera settings for the state variables above
+rayshader::render_camera(phi = 60, zoom = 0.70, theta = 0)
 
 # Define the output file path
 output_file <- "outputs/images/04-state-population-spike-map-ACT.png"
@@ -881,7 +885,7 @@ visualize_state <- function(state_data, state_name, transformation = "log",
       background = "white"
     )
   
-  # Adjust view interactively - modify values as needed
+  # Adjust view - Remember to go back and update the camera settings for the state variables above interactively - modify values as needed
   rayshader::render_camera(phi = 75, zoom = 0.7, theta = 0)
   
   # Define the output file path

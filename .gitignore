@@ -21,3 +21,6 @@ outputs/images/
 *.png
 *.pdf
 *.mp4
+
+# OS Files
+.DS_Store
