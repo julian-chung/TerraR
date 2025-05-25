@@ -153,13 +153,13 @@ density_raster |>
     heightmap = density_raster,
     solid = F,
     soliddepth = 0,
-    zscale = 100,  # We need to play with this value with the transformed data
+    zscale = 50,  # We need to play with this value with the transformed data
     shadowdepth = 0,
     shadow_darkness = .95,
     windowsize = c(800, 800),
-    phi = 65,
-    zoom = .65,
-    theta = -30,
+    phi = 60,
+    zoom = .6,
+    theta = -10,
     background = "white"
   )
 

@@ -90,7 +90,7 @@ get_raster_size <- function() {
 width_ratio <- get_raster_size()[[1]]
 height_ratio <- get_raster_size()[[2]]
 
-size <- 3000
+size <- 6000
 width <- round((size * width_ratio), 0)
 height <- round((size * height_ratio), 0)
 
@@ -123,20 +123,68 @@ pop_mat <- pop_rast |>
     as("Raster") |>
     rayshader::raster_to_matrix()
 
+# Check values in the matrix
+summary(as.vector(pop_mat))
+
 # Australian-themed colors
 cols <- rev(c(
     "#00843D", "#FFCD00", 
     "#FF8000", "#FF4500"
 ))
 
-texture <- grDevices::colorRampPalette(cols)(256)
-
 # Alternate colour palette for the texture
 # texture <- grDevices::colorRampPalette(viridisLite::turbo(256))(256)  # alternative color palette
 
+
+# Create a texture using the defined colors
+texture <- grDevices::colorRampPalette(cols)(1024)
+
+# Check the texture
+plot(1:1024, col = texture, pch = 15, cex = 2, main = "Texture Colors")
+
+# Check the dimensions of the matrix
+dim(pop_mat)
+
+# Create the initial 3D object
+pop_mat |>
+    rayshader::height_shade(texture = texture) |>
+    rayshader::plot_3d(
+        heightmap = pop_mat,
+        solid = F,
+        soliddepth = 0,
+        zscale = 10,  # Adjust this value as needed
+        shadowdepth = 0,
+        shadow_darkness = .95,
+        windowsize = c(800, 800),
+        phi = 65,
+        zoom = .65,
+        theta = -30,
+        background = "white"
+    )
+
+# Use this to adjust the view after building the window object
+rayshader::render_camera(phi = 60, zoom = .6, theta = -10)
+
+# Define the output file path
+output_file <- "outputs/images/02-population-spike-map-AU.png"
+
+# Render the high-quality image
+rayshader::render_highquality(
+  filename = output_file,
+  preview = TRUE,
+  light = TRUE,
+  lightdirection = 225,
+  lightaltitude = 60,
+  lightintensity = 400,
+  interactive = FALSE,
+  width = width,
+  height = height
+)
+
+
 #######################################################
-# We will experiment with two transformations for the 
-# population data, a square root and a power transformation.
+# We will experiment with some transformations for the 
+# population data, a log, square root and power transformation.
 # This should help us to enhance the visibility of smaller
 # cities and towns. 
 ########################################################
