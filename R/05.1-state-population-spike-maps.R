@@ -4,8 +4,8 @@
 #                 2025/05/16
 ########################################################
 # install rayshader & rayrender from the source
-# devtools::install_github("tylermorganwall/rayshader")
-# devtools::install_github("tylermorganwall/rayrender")
+devtools::install_github("tylermorganwall/rayshader")
+devtools::install_github("tylermorganwall/rayrender")
 
 # libraries we need
 libs <- c(
@@ -157,21 +157,113 @@ nsw_mat_log <- log10(nsw_mat + 1)  # +1 to avoid log(0)
 nsw_mat_sqrt <- sqrt(nsw_mat)
 nsw_mat_power <- nsw_mat^0.7
 
-# NSW visualization settings
+
+## --- START MODIFICATIONS ---
+  
+# Define parameters for landmass elevation and NA value handling
+# base_elevation: How much to raise the entire NSW landmass.
+# Adjust this value based on the scale of your nsw_mat population data.
+# If population values are large, base_elevation might need to be larger.
+# This value is in the same units as your nsw_mat data before zscale.
+base_elevation <- 50.0  # Example: raise landmass by 50 units
+epsilon <- 0.1          # Tiny offset to distinguish pop=0 from NA-within-NSW
+
+# Create a definitive mask for the NSW state boundary
+# This uses the nsw_rast as a template for grid alignment
+nsw_boundary_sf <- state_boundaries[["New South Wales"]] # Assuming state_boundaries is loaded
+template_stars_nsw <- nsw_rast # nsw_rast is the stars object from which nsw_mat was derived
+
+nsw_definitive_boundary_rast <- stars::st_rasterize(
+  nsw_boundary_sf,
+  template = template_stars_nsw
+)
+nsw_definitive_mask_matrix_raw <- as(nsw_definitive_boundary_rast, "Raster")
+nsw_definitive_mask_matrix <- rayshader::raster_to_matrix(nsw_definitive_mask_matrix_raw)
+is_within_nsw_matrix <- !is.na(nsw_definitive_mask_matrix)
+
+# Prepare the final height matrix for rendering
+nsw_mat_final <- matrix(NA_real_, nrow = nrow(nsw_mat), ncol = ncol(nsw_mat))
+
+for (r in 1:nrow(nsw_mat)) {
+  for (c in 1:ncol(nsw_mat)) {
+    if (is_within_nsw_matrix[r, c]) { # If the cell is within NSW boundary
+      if (!is.na(nsw_mat[r, c])) { # If there's population data
+        # Add population data on top of base_elevation, plus epsilon
+        nsw_mat_final[r, c] <- base_elevation + nsw_mat[r, c] + epsilon
+      } else { # If it's NA within NSW (e.g., a lake, no data area)
+        # Set to base_elevation, will be colored bone white
+        nsw_mat_final[r, c] <- base_elevation
+      }
+    } else { # Outside NSW boundary
+      nsw_mat_final[r, c] <- NA_real_
+    }
+  }
+}
+
+# NSW visualization settings (phi, theta, zoom might need tweaking with the new base height)
 nsw_zscale <- 10        # Adjust as needed
 nsw_phi <- 60           # Elevation angle
 nsw_theta <- 25        # Azimuth angle
 nsw_zoom <- 0.60        # Zoom level
 
+# The existing 'texture' variable should work well with this new height scheme:
+# Bone white for base_elevation (NA-within-NSW)
+# Soft yellow onwards for base_elevation + epsilon + population data
+# texture <- grDevices::colorRampPalette(cols)(1024) # This is already defined in your script
+
+# --- END MODIFICATIONS ---
+
 # Create the 3D object for NSW
-nsw_mat |>          # We can use any transformation here
-  rayshader::height_shade(texture = texture) |>
+nsw_mat_final |> 
+  rayshader::height_shade(texture = texture) |> 
   rayshader::plot_3d(
-    heightmap = nsw_mat,  # We can use any transformation here
-    solid = FALSE,
-    soliddepth = 0,
+    heightmap = nsw_mat_final, 
+    solid = TRUE,             
+    soliddepth = -150,        
+    zscale = nsw_zscale, # zscale scales the model here
+    shadowdepth = 0,          
+    shadow_darkness = .95,
+    windowsize = c(800, 800),
+    phi = nsw_phi,       # Initial RGL window phi
+    zoom = nsw_zoom,     # Initial RGL window zoom
+    theta = nsw_theta,   # Initial RGL window theta
+    background = "grey10"
+  )
+
+# Adjust view - Remember to go back and update the camera settings for the state variables above interactively - modify values as needed
+rayshader::render_camera(phi = nsw_phi, zoom = nsw_zoom, theta = nsw_theta) # Use defined variables
+
+# Define the output file path
+output_file <- "outputs/images/04-state-population-spike-map-NSW-grey10-elevated-camera-adjusted.png"
+
+# Render the high-quality image
+rayshader::render_highquality(
+  filename = output_file,
+  preview = TRUE,
+  light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
+  lightdirection = 225,
+  lightaltitude = 60,
+  lightintensity = 400,
+  interactive = FALSE,
+  width = width_nsw,
+  height = height_nsw
+)
+
+###### Attempt to Render the high-quality image with different camera settings
+
+# Create the 3D object for NSW (same as before)
+nsw_mat_final |> 
+  rayshader::height_shade(texture = texture) |> 
+  rayshader::plot_3d(
+    heightmap = nsw_mat_final, 
+    solid = TRUE,             
+    soliddepth = -150,        
     zscale = nsw_zscale,
-    shadowdepth = 0,
+    shadowdepth = 0,          
     shadow_darkness = .95,
     windowsize = c(800, 800),
     phi = nsw_phi,
@@ -180,24 +272,34 @@ nsw_mat |>          # We can use any transformation here
     background = "grey10"
   )
 
-# Adjust view - Remember to go back and update the camera settings for the state variables above interactively - modify values as needed
-rayshader::render_camera(phi = 60, zoom = 0.6, theta = 25)
+# Use pan3d to shift the view
+# pan3d(button, dev = cur3d(), subscene = currentSubscene3d(dev))
+# You can call this interactively or programmatically
 
-# Define the output file path
-output_file <- "outputs/images/04-state-population-spike-map-NSW-grey10.png"
+# For programmatic panning, you can simulate mouse movements:
+# Pan right and up
+rgl::pan3d(c(0.3, -0.2, 0))  # x, y, z shifts
 
+# Or use multiple small pans for fine control
+# rgl::pan3d(c(0.1, 0, 0))  # Pan right
+# rgl::pan3d(c(0, -0.1, 0)) # Pan up
 
-# Render the high-quality image
+# Now render with this panned view
+output_file_panned <- "outputs/images/04-state-population-spike-map-NSW-grey10-elevated-PANNED.png"
+
 rayshader::render_highquality(
-  filename = output_file,
+  filename = output_file_panned,
+  # No camera arguments - use the RGL window state
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A",
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
   interactive = FALSE,
-  backgroundhigh = "1A1A1A", # Rayshader does not inherit the background color from the plot_3d call, so we set it here
-  backgroundlow = "1A1A1A", # We need to set both backgroundhigh and backgroundlow
   width = width_nsw,
   height = height_nsw
 )
