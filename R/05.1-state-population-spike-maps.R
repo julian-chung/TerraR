@@ -166,7 +166,7 @@ nsw_mat_power <- nsw_mat^0.7
 # If population values are large, base_elevation might need to be larger.
 # This value is in the same units as your nsw_mat data before zscale.
 base_elevation <- 50.0  # Example: raise landmass by 50 units
-epsilon <- 0.1          # Tiny offset to distinguish pop=0 from NA-within-NSW
+epsilon <- 0.1          # Tiny offset to distinguish pop=0 from NA
 
 # Create a definitive mask for the NSW state boundary
 # This uses the nsw_rast as a template for grid alignment
@@ -359,8 +359,8 @@ vic_mat |>          # We can use any transformation here
   rayshader::height_shade(texture = texture) |>
   rayshader::plot_3d(
     heightmap = vic_mat,  # We can use any transformation here
-    solid = FALSE,
-    soliddepth = 0,
+    solid = TRUE,
+    soliddepth = -150,
     zscale = vic_zscale,
     shadowdepth = 0,
     shadow_darkness = .95,
@@ -368,7 +368,7 @@ vic_mat |>          # We can use any transformation here
     phi = vic_phi,
     zoom = vic_zoom,
     theta = vic_theta,
-    background = "white"
+    background = "grey10"
   )
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above
@@ -382,6 +382,10 @@ rayshader::render_highquality(
   filename = output_file,
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
@@ -445,8 +449,8 @@ qld_mat |>          # We can use any transformation here
   rayshader::height_shade(texture = texture) |>
   rayshader::plot_3d(
     heightmap = qld_mat,  # We can use any transformation here
-    solid = FALSE,
-    soliddepth = 0,
+    solid = TRUE,
+    soliddepth = -150,
     zscale = qld_zscale,
     shadowdepth = 0,
     shadow_darkness = .95,
@@ -454,7 +458,7 @@ qld_mat |>          # We can use any transformation here
     phi = qld_phi,
     zoom = qld_zoom,
     theta = qld_theta,
-    background = "white"
+    background = "grey10"
   )
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above
@@ -468,6 +472,10 @@ rayshader::render_highquality(
   filename = output_file,
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
@@ -531,8 +539,8 @@ sa_mat |>           # We can use any transformation here
   rayshader::height_shade(texture = texture) |>
   rayshader::plot_3d(
     heightmap = sa_mat,   # We can use any transformation here
-    solid = FALSE,
-    soliddepth = 0,
+    solid = TRUE,
+    soliddepth = -150,
     zscale = sa_zscale,
     shadowdepth = 0,
     shadow_darkness = .95,
@@ -540,7 +548,7 @@ sa_mat |>           # We can use any transformation here
     phi = sa_phi,
     zoom = sa_zoom,
     theta = sa_theta,
-    background = "white"
+    background = "grey10"
   )
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above
@@ -554,6 +562,10 @@ rayshader::render_highquality(
   filename = output_file,
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
@@ -617,8 +629,8 @@ wa_mat |>           # We can use any transformation here
   rayshader::height_shade(texture = texture) |>
   rayshader::plot_3d(
     heightmap = wa_mat,   # We can use any transformation here
-    solid = FALSE,
-    soliddepth = 0,
+    solid = TRUE,
+    soliddepth = -150,
     zscale = wa_zscale,
     shadowdepth = 0,
     shadow_darkness = .95,
@@ -626,7 +638,7 @@ wa_mat |>           # We can use any transformation here
     phi = wa_phi,
     zoom = wa_zoom,
     theta = wa_theta,
-    background = "white"
+    background = "grey10"
   )
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above
@@ -640,6 +652,10 @@ rayshader::render_highquality(
   filename = output_file,
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
@@ -703,8 +719,8 @@ tas_mat |>          # We can use any transformation here
   rayshader::height_shade(texture = texture) |>
   rayshader::plot_3d(
     heightmap = tas_mat, # We can use any transformation here
-    solid = FALSE,
-    soliddepth = 0,
+    solid = TRUE,
+    soliddepth = -150,
     zscale = tas_zscale,
     shadowdepth = 0,
     shadow_darkness = .95,
@@ -712,7 +728,7 @@ tas_mat |>          # We can use any transformation here
     phi = tas_phi,
     zoom = tas_zoom,
     theta = tas_theta,
-    background = "white"
+    background = "grey10"
   )
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above
@@ -726,6 +742,10 @@ rayshader::render_highquality(
   filename = output_file,
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
@@ -789,8 +809,8 @@ nt_mat |>
   rayshader::height_shade(texture = texture) |>
   rayshader::plot_3d(
     heightmap = nt_mat,   
-    solid = FALSE,
-    soliddepth = 0,
+    solid = TRUE,
+    soliddepth = -150,
     zscale = nt_zscale,
     shadowdepth = 0,
     shadow_darkness = .95,
@@ -798,7 +818,7 @@ nt_mat |>
     phi = nt_phi,
     zoom = nt_zoom,
     theta = nt_theta,
-    background = "white"
+    background = "grey10"
   )
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above
@@ -812,6 +832,10 @@ rayshader::render_highquality(
   filename = output_file,
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
@@ -875,8 +899,8 @@ act_mat |>          # Changed from act_mat_log to act_mat
   rayshader::height_shade(texture = texture) |>
   rayshader::plot_3d(
     heightmap = act_mat,  # Changed from act_mat_log to act_mat
-    solid = FALSE,
-    soliddepth = 0,
+    solid = TRUE,
+    soliddepth = -150,
     zscale = act_zscale,
     shadowdepth = 0,
     shadow_darkness = .95,
@@ -884,7 +908,7 @@ act_mat |>          # Changed from act_mat_log to act_mat
     phi = act_phi,
     zoom = act_zoom,
     theta = act_theta,
-    background = "white"
+    background = "grey10"
   )
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above
@@ -898,6 +922,10 @@ rayshader::render_highquality(
   filename = output_file,
   preview = TRUE,
   light = TRUE,
+  ambient_light = FALSE,
+  backgroundhigh = "#1A1A1A", 
+  backgroundlow = "#1A1A1A",
+  ground_material = rayrender::diffuse(color = "#1A1A1A"),
   lightdirection = 225,
   lightaltitude = 60,
   lightintensity = 400,
