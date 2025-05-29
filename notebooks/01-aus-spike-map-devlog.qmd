@@ -1041,7 +1041,7 @@ rgl::close3d()
 
 Next step was to create state level population spike maps.
 
-## Cracking the Landmass and Background Rendering. 
+## Cracking the Landmass and Background Rendering.
 
 Goal: Create a high-fidelity spike map of NSW using rayshader, with a clean dark background, a bone-white landmass, and population spikes in a glowing gradient — all rendered as a solid 3D slab like a geographic slice of marble.
 
@@ -1051,11 +1051,7 @@ The initial challenge was deceptively simple: just change the background color.
 
 We started by trying to set the background parameter in rayshader::plot_3d(). It looked like it worked — the RGL preview window showed the grey background just fine. But when we ran render_highquality(), every single image exported came out with the same default pale grey backdrop.
 
-We tried:
-- Setting background = "grey10" in plot_3d()
-- Using hex codes (#1A1A1A) in both plot_3d() and render_highquality()
-- Playing with backgroundhigh and backgroundlow parameters in render_highquality()
-- Changing light, ambient light, sample count — everything short of ritual sacrifice
+We tried: - Setting background = "grey10" in plot_3d() - Using hex codes (#1A1A1A) in both plot_3d() and render_highquality() - Playing with backgroundhigh and backgroundlow parameters in render_highquality() - Changing light, ambient light, sample count — everything short of ritual sacrifice
 
 Nothing stuck. We kept seeing the same washed-out renders. It became clear: plot_3d’s background only affects the preview window. The rendered image is built independently by rayrender, not rgl, so the backdrop is a whole different beast.
 
@@ -1063,8 +1059,7 @@ Nothing stuck. We kept seeing the same washed-out renders. It became clear: plot
 
 The fix was hilariously simple, but well-hidden: the background in render_highquality() is controlled by the plane beneath the scene, and unless you tell it otherwise, it renders in a default material that ignores your color.
 
-The solution:
-ground_material = rayrender::diffuse(color = "#1A1A1A")
+The solution: ground_material = rayrender::diffuse(color = "#1A1A1A")
 
 This one line made everything click — the background was finally actually dark grey. 🎉
 
@@ -1072,12 +1067,7 @@ This one line made everything click — the background was finally actually dark
 
 With the background fixed, our next aesthetic goal was to give the landmass of NSW a clean, uniform elevation (like a plateau), while still letting population spikes protrude upward. And critically — unpopulated but valid areas (e.g., lakes, parks, no-data regions) needed to be colored bone white, while populated pixels moved into the yellow→orange→red gradient.
 
-To achieve this, we:
-1. Created a raster mask of the NSW geometry using st_rasterize() and aligned it to the same grid as the population matrix.
-2. Wrote a custom loop to build a new height matrix (nsw_mat_final) that:
-   - Assigned a constant base elevation to all in-boundary cells
-   - Added a small epsilon (1 unit) to cells with population, to shift them into a different color bucket
-   - Left out-of-bound cells as NA so they'd render transparent
+To achieve this, we: 1. Created a raster mask of the NSW geometry using st_rasterize() and aligned it to the same grid as the population matrix. 2. Wrote a custom loop to build a new height matrix (nsw_mat_final) that: - Assigned a constant base elevation to all in-boundary cells - Added a small epsilon (1 unit) to cells with population, to shift them into a different color bucket - Left out-of-bound cells as NA so they'd render transparent
 
 Result: A raised landmass with subtle elevation, and actual population data starting just above it.
 
@@ -1085,9 +1075,7 @@ Result: A raised landmass with subtle elevation, and actual population data star
 
 To complete the slab-of-marble effect, we wanted the map to look like it had been cut out of something. Luckily, rayshader::plot_3d() has a solid = TRUE mode that turns your matrix into a volumetric chunk.
 
-With the landmass raised to a base of 750 units, we used:
-solid = TRUE,
-soliddepth = -300,
+With the landmass raised to a base of 750 units, we used: solid = TRUE, soliddepth = -300,
 
 This extruded the map downward, making it feel grounded and physical. The whole thing now looks like a sculpted tile, with spikes jutting from a clean top surface.
 
@@ -1095,13 +1083,80 @@ This extruded the map downward, making it feel grounded and physical. The whole 
 
 This was a weirdly gnarly part of the project. We spent hours adjusting parameters that didn’t matter because the rendering logic between plot_3d() and render_highquality() is split across two worlds (rgl and rayrender), and the docs didn’t always make this clear.
 
-But with that behind us:
-- ✅ Background rendering works
-- ✅ Landmass masking works
-- ✅ Slab depth adds gorgeous weight
+But with that behind us: - ✅ Background rendering works - ✅ Landmass masking works - ✅ Slab depth adds gorgeous weight
 
 Next up: fine-tuning the camera position (it's tricky to center landmasses in 3D space), and then generating maps for the other states before we tackle the Australia-wide population spike map again.
 
 This one's going in the "hard-won victories" column.
 
+## State Population State Maps
 
+## **Understanding the Performance Bottleneck in Spatial Intersections**
+
+The function that's taking hours to run is performing spatial intersections between Australian state boundaries and population data. Let me explain why this is computationally expensive:
+
+### **Primary Performance Bottlenecks**
+
+1.  **`sf::st_intersection()` Complexity**: This spatial operation is computationally intensive because:
+
+    -   It performs geometric overlay operations between two spatial datasets
+
+    -   It checks for all points where geometries from both datasets intersect
+
+    -   It computes new geometries representing these intersections
+
+    -   It preserves attributes from both input datasets
+
+2.  **Large Dataset Size**: Your code is processing the Kontur population dataset for Australia:
+
+    -   This dataset likely contains millions of high-precision population points or polygons
+
+    -   Each point/polygon has complex geometric properties requiring extensive calculations
+
+    -   The operation must be repeated for each state boundary
+
+3.  **Sequential Processing**: The `lapply()` function processes each state sequentially rather than in parallel, which doesn't leverage your 7950x3D's multi-core capabilities for this specific operation.
+
+### **Technical Explanation**
+
+The spatial intersection algorithm must:
+
+1.  Build spatial indices for both datasets
+
+2.  Perform initial filtering using bounding boxes
+
+3.  Calculate precise geometric intersections between potentially millions of polygons
+
+4.  Create new geometries and copy attributes for all intersections
+
+5.  Validate the topological integrity of resulting geometries
+
+This involves many floating-point calculations, spatial index lookups, and memory operations.
+
+### **Hardware Differences**
+
+Your AMD 7950x3D performs better than the M1 MacBook Pro because:
+
+-   It has more cores (16 vs. 8-10 on M1 Pro/Max)
+
+-   It has higher single-thread performance for this type of workload
+
+-   It likely has more RAM and memory bandwidth
+
+-   Desktop CPUs generally have better sustained performance under heavy loads
+
+### **Optimization Possibilities**
+
+To improve performance:
+
+1.  Use spatial indexing pre-filtering (already built into sf, but can be configured)
+
+2.  Simplify geometries before intersection to reduce computational complexity
+
+3.  Break the problem into smaller geographic tiles and process in parallel
+
+4.  Consider using specialized libraries like `lwgeom` for certain operations
+
+5.  Implement parallel processing with `future` and `furrr` packages
+
+The saveRDS approach you're using is a practical workaround since the dataset isn't changing between runs.
