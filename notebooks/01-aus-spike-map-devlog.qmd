@@ -2210,7 +2210,7 @@ This involves many floating-point calculations, spatial index lookups, and memor
 
 ### **Hardware Differences**
 
-Your AMD 7950x3D performs better than the M1 MacBook Pro because:
+My AMD 7950x3D performs better than the M1 MacBook Pro because:
 
 -   It has more cores (16 vs. 8-10 on M1 Pro/Max)
 
@@ -2234,4 +2234,5 @@ To improve performance:
 
 5.  Implement parallel processing with `future` and `furrr` packages
 
-The saveRDS approach you're using is a practical workaround since the dataset isn't changing between runs.
+The saveRDS approach we're using is a practical workaround since the dataset isn't changing between runs.
+
