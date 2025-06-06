@@ -1039,7 +1039,7 @@ rgl::close3d()
 
 ## State Level Population Spike Maps
 
-Next step was to create state level population spike maps. Australian state boundries data was downloaded from 
+Next step was to create state level population spike maps. Australian state boundries data was downloaded from
 
 ```{r}
 #######################################################
@@ -2236,3 +2236,72 @@ To improve performance:
 
 The saveRDS approach we're using is a practical workaround since the dataset isn't changing between runs.
 
+## Blender Pipeline
+
+🔁 Step 1: Exporting the OBJ from R
+
+In R, I used this snippet to export the current 3D view as an `.obj` file:
+
+`rayshader::save_obj("outputs/models/nsw_spike_map.obj")`
+
+This also creates an `.mtl` (material) file and a `.png` texture image. I kept all these files in the same folder.
+
+### 📦 Step 2: Importing the OBJ into Blender
+
+1.  Open **Blender**.
+2.  Delete the default cube (press `X` to delete it).
+3.  Go to **File \> Import \> Wavefront (.obj)**.
+4.  Navigate to the folder with the `.obj`, `.mtl`, and texture image, and select the `.obj` file.
+5.  After import, press `0` on the numpad to switch to **Camera View**, and `N` to bring up the transform panel if needed.
+
+💡 *Tip: If the mesh looks weird or washed out, make sure you're in `Material Preview` or `Rendered` view (toggle in top-right corner).*
+
+------------------------------------------------------------------------
+
+### 💡 Step 3: Add Lighting
+
+1.  Go to the **Layout** workspace (default).
+2.  Select the default **light** in the scene (or add a new one: `Shift+A > Light > Area`).
+3.  In the **Properties Panel** on the right, click the **light bulb icon**.
+4.  Set `Power` to something high (e.g., 500W+ depending on your scale).
+5.  Adjust the `Color` and `Size` as needed.
+6.  Move the light with `G`, rotate it with `R`.
+
+💡 *Optional: Add multiple lights from different angles for soft shadows and highlights.*
+
+------------------------------------------------------------------------
+
+### 🎥 Step 4: Setup Camera
+
+1.  Select the **camera**, or add one (`Shift+A > Camera`).
+2.  Press `N` to open the sidebar, then use the **View \> Camera to View** option.
+3.  Move the camera (`G` to grab, `R` to rotate) until it frames your model nicely.
+
+------------------------------------------------------------------------
+
+### 🔄 Step 5: Animate a Simple Rotation
+
+Let’s make the spike map spin!
+
+1.  Select your imported model.
+2.  Go to frame **1** in the timeline.
+3.  Press `I` \> **Rotation** (this inserts a keyframe).
+4.  Go to frame **250**.
+5.  Press `R`, `Z`, `360`, then `Enter` (rotates the object 360° on the Z-axis).
+6.  Press `I` \> **Rotation** again.
+
+Boom — your object now rotates!
+
+------------------------------------------------------------------------
+
+### ⚙️ Step 6: Render Settings
+
+1.  Go to the **Render Properties** tab (camera icon).
+2.  Set **Render Engine** to `Cycles` or `Eevee`.
+3.  Go to **Output Properties** (printer icon):
+    -   Set resolution (e.g., 1920x1080)
+    -   Set frame rate (24 or 30 fps)
+    -   Set output file path and format (PNG, MP4, etc.)
+4.  Then **Render \> Render Animation**.
+
+------------------------------------------------------------------------
