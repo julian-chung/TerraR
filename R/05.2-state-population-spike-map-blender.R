@@ -214,11 +214,6 @@ for (r in 1:nrow(nsw_mat)) {
   }
 }
 
-# NSW visualization settings
-nsw_zscale <- 10        # Adjust as needed
-nsw_phi <- 60           # Elevation angle
-nsw_theta <- 25        # Azimuth angle
-nsw_zoom <- 0.60        # Zoom level
 ## --- END MODIFICATIONS ---
 
 # Create the 3D object for NSW and export to Blender
@@ -237,6 +232,12 @@ nsw_mat_final |>
     theta = nsw_theta,
     background = "grey10"
   )
+
+# NSW visualization settings
+nsw_zscale <- 10        # Adjust as needed
+nsw_phi <- 60           # Elevation angle
+nsw_theta <- 25        # Azimuth angle
+nsw_zoom <- 0.60        # Zoom level
 
 # Adjust view for optimal export
 rayshader::render_camera(phi = nsw_phi, zoom = nsw_zoom, theta = nsw_theta)

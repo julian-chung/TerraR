@@ -70,6 +70,7 @@ filtered_states <- aus_states |>
 # Create a list of state geometries by name (using the filtered dataframe)
 state_boundaries <- split(filtered_states, filtered_states$STE_NAME21)
 
+# WARNING - Creating the state_pops potentially takes hours - used saved data in data/processed/state_pops.rds 
 # Create a named list of clipped population data per state
 state_pops <- lapply(state_boundaries, function(state_geom) {
   # Get the geometry column name for state_geom
@@ -86,10 +87,10 @@ state_pops <- lapply(state_boundaries, function(state_geom) {
 })
 
 # Optional: Save the resulting list for future use (recommended if this takes a long time)
-saveRDS(state_pops, file = "data/processed/state_pops.rds")
+# saveRDS(state_pops, file = "data/processed/state_pops.rds")
 
 # Later, we can reload with:
-# state_pops <- readRDS("data/processed/state_pops.rds")
+state_pops <- readRDS("data/processed/state_pops.rds")
 
 # Extract individual state population datasets
 nsw_pop_sf <- state_pops[["New South Wales"]]
@@ -194,7 +195,7 @@ process_state_data <- function(state_pop_sf, state_name, base_size = 3000) {
 nsw_data <- process_state_data(nsw_pop_sf, "New South Wales")
 vic_data <- process_state_data(vic_pop_sf, "Victoria")
 qld_data <- process_state_data(qld_pop_sf, "Queensland")
-sa_data <- process_state_data(sa_pop_sf, "South Australia")
+xsa_data <- process_state_data(sa_pop_sf, "South Australia")
 wa_data <- process_state_data(wa_pop_sf, "Western Australia")
 tas_data <- process_state_data(tas_pop_sf, "Tasmania")
 nt_data <- process_state_data(nt_pop_sf, "Northern Territory")

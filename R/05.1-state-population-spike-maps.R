@@ -80,7 +80,7 @@ state_pops <- lapply(state_boundaries, function(state_geom) {
 })
 
 # IMPORTANT: Save the resulting list for future use (recommended)
-saveRDS(state_pops, file = "data/processed/state_pops.rds")
+# saveRDS(state_pops, file = "data/processed/state_pops.rds")
 
 # Later, we can reload with:
 state_pops <- readRDS("data/processed/state_pops.rds")
@@ -200,12 +200,6 @@ for (r in 1:nrow(nsw_mat)) {
   }
 }
 
-# NSW visualization settings (phi, theta, zoom might need tweaking with the new base height)
-nsw_zscale <- 10        # Adjust as needed
-nsw_phi <- 60           # Elevation angle
-nsw_theta <- 25        # Azimuth angle
-nsw_zoom <- 0.60        # Zoom level
-
 # The existing 'texture' variable should work well with this new height scheme:
 # Bone white for base_elevation (NA-within-NSW)
 # Soft yellow onwards for base_elevation + epsilon + population data
@@ -229,6 +223,12 @@ nsw_mat_final |>
     theta = nsw_theta,   # Initial RGL window theta
     background = "grey10"
   )
+
+# NSW visualization settings (phi, theta, zoom might need tweaking with the new base height)
+nsw_zscale <- 15        # Adjust as needed
+nsw_phi <- 50           # Elevation angle
+nsw_theta <- -.5        # Azimuth angle
+nsw_zoom <- 0.70       # Zoom level
 
 # Adjust view - Remember to go back and update the camera settings for the state variables above interactively - modify values as needed
 rayshader::render_camera(phi = nsw_phi, zoom = nsw_zoom, theta = nsw_theta) # Use defined variables
@@ -348,12 +348,6 @@ vic_mat_log <- log10(vic_mat + 1)  # +1 to avoid log(0)
 vic_mat_sqrt <- sqrt(vic_mat)
 vic_mat_power <- vic_mat^0.7
 
-# Victoria visualization settings
-vic_zscale <- 10        # Adjust as needed
-vic_phi <- 65           # Elevation angle
-vic_theta <- -10        # Azimuth angle
-vic_zoom <- 0.65        # Zoom level
-
 # Create the 3D object for Victoria
 vic_mat |>          # We can use any transformation here
   rayshader::height_shade(texture = texture) |>
@@ -371,11 +365,17 @@ vic_mat |>          # We can use any transformation here
     background = "grey10"
   )
 
+# Victoria visualization settings
+vic_zscale <- 10        # Adjust as needed
+vic_phi <- 65           # Elevation angle
+vic_theta <- -0.50        # Azimuth angle
+vic_zoom <- 0.70        # Zoom level
+
 # Adjust view - Remember to go back and update the camera settings for the state variables above
 rayshader::render_camera(phi = 65, zoom = 0.65, theta = 0)
 
 # Define the output file path
-output_file <- "outputs/images/04-state-population-spike-map-VIC.png"
+output_file <- "outputs/images/04-state-population-spike-map-VIC-greyscale.png"
 
 # Render the high-quality image
 rayshader::render_highquality(
