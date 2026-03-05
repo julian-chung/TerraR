@@ -1,0 +1,53 @@
+---
+title: "Australian Population Spike Maps"
+author: "Julian Chung"
+format:
+  html:
+    theme: cosmo
+    toc: false
+    page-layout: full
+---
+
+<!-- Hero image — Victoria -->
+![](outputs/images/state-spike-map-Victoria.png){width=100% fig-alt="3D population spike map of Victoria"}
+
+---
+
+<!-- INTRO: 3-4 sentences. What it is, what data sources, what technique. -->
+
+---
+
+## The Maps
+
+::: {layout-ncol=4}
+
+![New South Wales](outputs/images/state-spike-map-New-South-Wales.png)
+
+![Victoria](outputs/images/state-spike-map-Victoria.png)
+
+![Queensland](outputs/images/state-spike-map-Queensland.png)
+
+![South Australia](outputs/images/state-spike-map-South-Australia.png)
+
+![Western Australia](outputs/images/state-spike-map-Western-Australia.png)
+
+![Tasmania](outputs/images/state-spike-map-Tasmania.png)
+
+![Northern Territory](outputs/images/state-spike-map-Northern-Territory.png)
+
+![Australian Capital Territory](outputs/images/state-spike-map-Australian-Capital-Territory.png)
+
+:::
+
+---
+
+## How it works
+
+- **Population data:** Kontur's 400m hexagonal population grid clipped to each state boundary using `sf::st_intersection()`
+- **Rasterization:** Each state's population is rasterized to a matrix preserving its geographic aspect ratio
+- **Transformation:** A log transform compresses extreme city spikes so smaller towns remain visible
+- **Rendering:** rayshader converts the height matrix into a 3D scene and renders with ray-traced lighting
+
+---
+
+[Full technical devlog](notebooks/01-aus-spike-map-devlog.qmd) · [GitHub](https://github.com/julian-chung/TerraR)
