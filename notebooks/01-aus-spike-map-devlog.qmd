@@ -191,71 +191,10 @@ rayshader::render_highquality(
 
 -   Projection, masking, and zscale tuning require finesse
 
-## Goals
-
--   Successfully render a 3D spike map of Australia using population density.
-
--   Explore rotation and rendering options using rayshader’s interactive preview.
-
--   Apply transformations to enhance visibility of smaller towns and cities.
-
--   Test different zscale values to balance urban and rural visibility.
-
--   Evaluate the impact of transformations (log, square root, power) on spike visibility.
-
--   Experiment with different colour palettes to represent Australian geography.
-
--   Add a landmask or ocean overlay to provide geographic context.
-
--   Add state borders to improve interpretability.
-
--   Generate state level population spike maps for comparison.
-
--   Reflect on limitations of rayshader for large-scale mapping.
-
--   Test exporting pipeline to Blender for cinematic animation.
-
 ## Minimal Refactoring Approach
 
 ```{r}
-#######################################################
-#                 Making crisp spike maps with R
-#                 Adapted for Australia
-#                 2025/05/16
-########################################################
-# install rayshader & rayrender from the source
-# devtools::install_github("tylermorganwall/rayshader")
-# devtools::install_github("tylermorganwall/rayrender")
-
-# libraries we need
-libs <- c(
-    "tidyverse", "R.utils",
-    "httr", "sf", "stars",
-    "rayshader"
-)
-
-# install missing libraries
-installed_libs <- libs %in% rownames(installed.packages())
-if (any(installed_libs == F)) {
-    install.packages(libs[!installed_libs])
-}
-
-# load libraries
-invisible(lapply(libs, library, character.only = T))
-
-# Ensure the output directory exists
-if (!dir.exists("outputs/images")) {
-  dir.create("outputs/images", recursive = TRUE)
-}
-
-### 1. LOAD DATA
-### -------------
-# Using local file instead of downloading
-file_path <- "data/raw/kontur_population_AU_20231101.gpkg"
-
-# Australia-appropriate projection
-# Lambert Conformal Conic for Australia (GDA2020 / Australia Albers)
-crsAU <- "+proj=aea +lat_0=0 +lon_0=132 +lat_1=-18 +lat_2=-36 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+# Setup: libraries, file paths, and projection — same as Section 1
 
 get_population_data <- function() {
     pop_df <- sf::st_read(file_path) |>
@@ -446,44 +385,7 @@ The population data for Australia has a highly skewed distribution, with a few l
 The refactored code is below:
 
 ```{r}
-#######################################################
-#                 Making crisp spike maps with R
-#                 Adapted for Australia
-#                 2025/05/16
-########################################################
-# install rayshader & rayrender from the source
-# devtools::install_github("tylermorganwall/rayshader")
-# devtools::install_github("tylermorganwall/rayrender")
-
-# libraries we need
-libs <- c(
-    "tidyverse", "R.utils",
-    "httr", "sf", "stars",
-    "rayshader"
-)
-
-# install missing libraries
-installed_libs <- libs %in% rownames(installed.packages())
-if (any(installed_libs == F)) {
-    install.packages(libs[!installed_libs])
-}
-
-# load libraries
-invisible(lapply(libs, library, character.only = T))
-
-# Ensure the output directory exists
-if (!dir.exists("outputs/images")) {
-  dir.create("outputs/images", recursive = TRUE)
-}
-
-### 1. LOAD DATA
-### -------------
-# Using local file instead of downloading
-file_path <- "data/raw/kontur_population_AU_20231101.gpkg"
-
-# Australia-appropriate projection
-# Lambert Conformal Conic for Australia (GDA2020 / Australia Albers)
-crsAU <- "+proj=aea +lat_0=0 +lon_0=132 +lat_1=-18 +lat_2=-36 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+# Setup: libraries, file paths, and projection — same as Section 1
 
 get_population_data <- function() {
     pop_df <- sf::st_read(file_path) |>
@@ -719,10 +621,10 @@ rayshader::render_highquality(
 
 The initial geometry plot and the raster plot are the same as above.
 
-For the purpose of demonstration we have kept the Z-Scale consistent throughout these plots.
+For the purpose of demonstration I have kept the Z-Scale consistent throughout these plots.
 
 ::: {.callout-note collapse="true" title="What is `zscale` in rayshader?"}
-In `rayshader`, the `zscale` parameter controls **how "tall" or "flat" the spikes appear** in our 3D render. It’s a scaling factor that translates our data values (population, density, etc.) into vertical height, relative to the X-Y spacing of the matrix.
+In `rayshader`, the `zscale` parameter controls **how "tall" or "flat" the spikes appear** in the 3D render. It’s a scaling factor that translates data values (population, density, etc.) into vertical height, relative to the X-Y spacing of the matrix.
 
 Think of it like a **height exaggeration dial**:
 
@@ -731,7 +633,7 @@ Think of it like a **height exaggeration dial**:
 
 Internally: actual_z_height = value_in_matrix / zscale
 
-This means if we have a matrix where the largest value is 100, and we want the tallest spike to be 50 units high, our `zscale` should be `100 / 50 = 2`.
+This means if the largest value is 100, and I want the tallest spike to be 50 units high, the `zscale` should be `100 / 50 = 2`.
 
 **Typical guidelines**: - Raw population data → try `zscale = 100–500` - Log-transformed data → try `zscale = 0.1–0.5` - Square root or power transforms → `zscale = 0.2–5`
 
@@ -808,7 +710,7 @@ Z-Scale = 0.25
 
 Power transformations apply an exponent ( \lambda ) to population values to reduce skew. When ( \lambda \< 1 ), high values (e.g. major cities) are compressed, while low values (regional centers) are gently lifted, allowing more visual differentiation across the density spectrum.
 
-For this spike map, we used a ( x\^{0.7} ) transformation, which softens the dominance of ultra-dense metro areas without losing their height entirely. This revealed more mid-density variation across regional Australia, such as inland towns and coastal urban fringes.
+For this spike map, I used a ( x\^{0.7} ) transformation, which softens the dominance of ultra-dense metro areas without losing their height entirely. This revealed more mid-density variation across regional Australia, such as inland towns and coastal urban fringes.
 
 This technique is a practical alternative to log transforms, which can over-flatten data.
 :::
@@ -832,9 +734,9 @@ Before diving deeper into tweaking spike maps, it's important to understand what
 
 *How rayshader spike maps work*
 
-When we use `rayshader::plot_3d()` with a raster matrix (like population counts), each individual cell in the matrix is rendered as a tile on a 3D surface, with it's heigh on the z-asix corresponding to the value in that tile.
+When using `rayshader::plot_3d()` with a raster matrix (like population counts), each individual cell in the matrix is rendered as a tile on a 3D surface, with its height on the z-axis corresponding to the value in that tile.
 
-In our case, each tile represents a 400m x 400m square of land (0.16 km²), and the number in that tile is the raw population count for that square. So the "spikes" in the final map are simply how many people live in that specific 0.16 km² area. Tall spikes = high population count in a small fixed area — which, if you think about it, is also population density in disguise.
+Each tile represents a 400m x 400m square of land (0.16 km²), and the number in that tile is the raw population count for that square. So the "spikes" in the final map are simply how many people live in that specific 0.16 km² area. Tall spikes = high population count in a small fixed area — which, if you think about it, is also population density in disguise.
 
 This means areas like the Sydney CBD, where thousands of people live in high-rise apartments stacked within just a few blocks, generate enormous vertical skyscrapers in the spike map. Suburbs like Parramatta, where people live in detached homes with yards, generate shorter, flatter spikes. And rural areas — vast tracts of land with very few people — barely rise off the ground.
 
@@ -860,36 +762,7 @@ So, while rayshader’s tile-based spike map is already doing a kind of “visua
 
 ```{r}
 # Population Density Spike Map of Australia
-
-# libraries we need
-libs <- c(
-  "tidyverse", "R.utils",
-  "httr", "sf", "stars",
-  "rayshader"
-)
-
-# install missing libraries
-installed_libs <- libs %in% rownames(installed.packages())
-if (any(installed_libs == F)) {
-  install.packages(libs[!installed_libs])
-}
-
-# load libraries
-invisible(lapply(libs, library, character.only = T))
-
-# Ensure the output directory exists
-if (!dir.exists("outputs/images")) {
-  dir.create("outputs/images", recursive = TRUE)
-}
-
-### 1. LOAD DATA
-### -------------
-# Using local file instead of downloading
-file_path <- "data/raw/kontur_population_AU_20231101.gpkg"
-
-# Australia-appropriate projection
-# Lambert Conformal Conic for Australia (GDA2020 / Australia Albers)
-crsAU <- "+proj=aea +lat_0=0 +lon_0=132 +lat_1=-18 +lat_2=-36 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+# Setup: libraries, file paths, and projection — same as Section 1
 
 get_population_data <- function() {
   pop_df <- sf::st_read(file_path) |>
@@ -1039,47 +912,68 @@ rgl::close3d()
 
 ## State Level Population Spike Maps
 
-Next step was to create state level population spike maps. Australian state boundries data was downloaded from
+Next step was to create state level population spike maps. Australian state boundary data was downloaded from the Australian Bureau of Statistics.
+
+### **Understanding the Performance Bottleneck in Spatial Intersections**
+
+The function that's taking hours to run is performing spatial intersections between Australian state boundaries and population data. Let me explain why this is computationally expensive:
+
+#### **Primary Performance Bottlenecks**
+
+1.  **`sf::st_intersection()` Complexity**: This spatial operation is computationally intensive because:
+
+    -   It performs geometric overlay operations between two spatial datasets
+
+    -   It checks for all points where geometries from both datasets intersect
+
+    -   It computes new geometries representing these intersections
+
+    -   It preserves attributes from both input datasets
+
+2.  **Large Dataset Size**: This code is processing the Kontur population dataset for Australia:
+
+    -   This dataset contains millions of polygons
+
+    -   Each point/polygon has complex geometric properties requiring extensive calculations
+
+    -   The operation must be repeated for each state boundary
+
+3.  **Sequential Processing**: The `lapply()` function processes each state sequentially rather than in parallel, which doesn't leverage multi-core capabilities for this specific operation.
+
+#### **Technical Explanation**
+
+The spatial intersection algorithm must:
+
+1.  Build spatial indices for both datasets
+
+2.  Perform initial filtering using bounding boxes
+
+3.  Calculate precise geometric intersections between potentially millions of polygons
+
+4.  Create new geometries and copy attributes for all intersections
+
+5.  Validate the topological integrity of resulting geometries
+
+This involves many floating-point calculations, spatial index lookups, and memory operations.
+
+#### **Optimization Possibilities**
+
+To improve performance:
+
+1.  Use spatial indexing pre-filtering (already built into sf, but can be configured)
+
+2.  Simplify geometries before intersection to reduce computational complexity
+
+3.  Break the problem into smaller geographic tiles and process in parallel
+
+4.  Consider using specialized libraries like `lwgeom` for certain operations
+
+5.  Implement parallel processing with `future` and `furrr` packages
+
+The saveRDS approach is a practical workaround since the dataset isn't changing between runs.
 
 ```{r}
-#######################################################
-#                 Making crisp spike maps with R
-#                 Adapted for Australia
-#                 2025/05/16
-########################################################
-# install rayshader & rayrender from the source
-devtools::install_github("tylermorganwall/rayshader")
-devtools::install_github("tylermorganwall/rayrender")
-
-# libraries we need
-libs <- c(
-  "tidyverse", "R.utils",
-  "httr", "sf", "stars",
-  "rayshader"
-)
-
-# install missing libraries
-installed_libs <- libs %in% rownames(installed.packages())
-if (any(installed_libs == F)) {
-  install.packages(libs[!installed_libs])
-}
-
-# load libraries
-invisible(lapply(libs, library, character.only = T))
-
-# Ensure the output directory exists
-if (!dir.exists("outputs/images")) {
-  dir.create("outputs/images", recursive = TRUE)
-}
-
-### 1. LOAD DATA
-### -------------
-# Using local file instead of downloading
-file_path <- "data/raw/kontur_population_AU_20231101.gpkg"
-
-# Australia-appropriate projection
-# Lambert Conformal Conic for Australia (GDA2020 / Australia Albers)
-crsAU <- "+proj=aea +lat_0=0 +lon_0=132 +lat_1=-18 +lat_2=-36 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+# Setup: libraries, file paths, and projection — same as Section 1
 
 get_population_data <- function() {
   pop_df <- sf::st_read(file_path) |>
@@ -2120,188 +2014,54 @@ rgl::close3d()
 
 Goal: Create a high-fidelity spike map of NSW using rayshader, with a clean dark background, a bone-white landmass, and population spikes in a glowing gradient — all rendered as a solid 3D slab like a geographic slice of marble.
 
-🔍 The Challenge: Why is My Background Not Changing?
+The Challenge: Why is My Background Not Changing?
 
 The initial challenge was deceptively simple: just change the background color.
 
-We started by trying to set the background parameter in rayshader::plot_3d(). It looked like it worked — the RGL preview window showed the grey background just fine. But when we ran render_highquality(), every single image exported came out with the same default pale grey backdrop.
+I started by trying to set the background parameter in rayshader::plot_3d(). It looked like it worked — the RGL preview window showed the grey background just fine. But when I ran render_highquality(), every single image exported came out with the same default pale grey backdrop.
 
-We tried: - Setting background = "grey10" in plot_3d() - Using hex codes (#1A1A1A) in both plot_3d() and render_highquality() - Playing with backgroundhigh and backgroundlow parameters in render_highquality() - Changing light, ambient light, sample count — everything short of ritual sacrifice
+I tried: - Setting background = "grey10" in plot_3d() - Using hex codes (#1A1A1A) in both plot_3d() and render_highquality() - Playing with backgroundhigh and backgroundlow parameters in render_highquality() - Changing light, ambient light, sample count — everything short of ritual sacrifice
 
-Nothing stuck. We kept seeing the same washed-out renders. It became clear: plot_3d’s background only affects the preview window. The rendered image is built independently by rayrender, not rgl, so the backdrop is a whole different beast.
+Nothing stuck. I kept seeing the same washed-out renders. It became clear: plot_3d’s background only affects the preview window. The rendered image is built independently by rayrender, not rgl, so the backdrop is a whole different beast.
 
-✅ The Fix: Use ground_material
+The Fix: Use ground_material
 
 The fix was hilariously simple, but well-hidden: the background in render_highquality() is controlled by the plane beneath the scene, and unless you tell it otherwise, it renders in a default material that ignores your color.
 
 The solution: ground_material = rayrender::diffuse(color = "#1A1A1A")
 
-This one line made everything click — the background was finally actually dark grey. 🎉
+This one line made everything click — the background was finally actually dark grey.
 
-🗺️ Masking the Landmass
+Masking the Landmass
 
-With the background fixed, our next aesthetic goal was to give the landmass of NSW a clean, uniform elevation (like a plateau), while still letting population spikes protrude upward. And critically — unpopulated but valid areas (e.g., lakes, parks, no-data regions) needed to be colored bone white, while populated pixels moved into the yellow→orange→red gradient.
+With the background fixed, my next aesthetic goal was to give the landmass of NSW a clean, uniform elevation (like a plateau), while still letting population spikes protrude upward. And critically — unpopulated but valid areas (e.g., lakes, parks, no-data regions) needed to be colored bone white, while populated pixels moved into the yellow→orange→red gradient.
 
-To achieve this, we: 1. Created a raster mask of the NSW geometry using st_rasterize() and aligned it to the same grid as the population matrix. 2. Wrote a custom loop to build a new height matrix (nsw_mat_final) that: - Assigned a constant base elevation to all in-boundary cells - Added a small epsilon (1 unit) to cells with population, to shift them into a different color bucket - Left out-of-bound cells as NA so they'd render transparent
+To achieve this, I: 1. Created a raster mask of the NSW geometry using st_rasterize() and aligned it to the same grid as the population matrix. 2. Wrote a custom loop to build a new height matrix (nsw_mat_final) that: - Assigned a constant base elevation to all in-boundary cells - Added a small epsilon (1 unit) to cells with population, to shift them into a different color bucket - Left out-of-bound cells as NA so they’d render transparent
 
 Result: A raised landmass with subtle elevation, and actual population data starting just above it.
 
-🪨 Adding Depth: Extruding the Landmass
+Adding Depth: Extruding the Landmass
 
-To complete the slab-of-marble effect, we wanted the map to look like it had been cut out of something. Luckily, rayshader::plot_3d() has a solid = TRUE mode that turns your matrix into a volumetric chunk.
+To complete the slab-of-marble effect, I wanted the map to look like it had been cut out of something. Luckily, rayshader::plot_3d() has a solid = TRUE mode that turns your matrix into a volumetric chunk.
 
-With the landmass raised to a base of 750 units, we used: solid = TRUE, soliddepth = -300,
+With the landmass raised to a base of 750 units, I used: solid = TRUE, soliddepth = -300,
 
 This extruded the map downward, making it feel grounded and physical. The whole thing now looks like a sculpted tile, with spikes jutting from a clean top surface.
 
-📝 Final Thoughts
+Final Thoughts
 
-This was a weirdly gnarly part of the project. We spent hours adjusting parameters that didn’t matter because the rendering logic between plot_3d() and render_highquality() is split across two worlds (rgl and rayrender), and the docs didn’t always make this clear.
+This was a weirdly gnarly part of the project. I spent hours adjusting parameters that didn’t matter because the rendering logic between plot_3d() and render_highquality() is split across two worlds (rgl and rayrender), and the docs didn’t always make this clear.
 
-But with that behind us: - ✅ Background rendering works - ✅ Landmass masking works - ✅ Slab depth adds gorgeous weight
+Background rendering works, landmass masking works, and the slab depth adds a satisfying weight to the final render.
 
-Next up: fine-tuning the camera position (it's tricky to center landmasses in 3D space), and then generating maps for the other states before we tackle the Australia-wide population spike map again.
-
-This one's going in the "hard-won victories" column.
-
-## State Population State Maps
-
-## **Understanding the Performance Bottleneck in Spatial Intersections**
-
-The function that's taking hours to run is performing spatial intersections between Australian state boundaries and population data. Let me explain why this is computationally expensive:
-
-### **Primary Performance Bottlenecks**
-
-1.  **`sf::st_intersection()` Complexity**: This spatial operation is computationally intensive because:
-
-    -   It performs geometric overlay operations between two spatial datasets
-
-    -   It checks for all points where geometries from both datasets intersect
-
-    -   It computes new geometries representing these intersections
-
-    -   It preserves attributes from both input datasets
-
-2.  **Large Dataset Size**: Your code is processing the Kontur population dataset for Australia:
-
-    -   This dataset likely contains millions of high-precision population points or polygons
-
-    -   Each point/polygon has complex geometric properties requiring extensive calculations
-
-    -   The operation must be repeated for each state boundary
-
-3.  **Sequential Processing**: The `lapply()` function processes each state sequentially rather than in parallel, which doesn't leverage your 7950x3D's multi-core capabilities for this specific operation.
-
-### **Technical Explanation**
-
-The spatial intersection algorithm must:
-
-1.  Build spatial indices for both datasets
-
-2.  Perform initial filtering using bounding boxes
-
-3.  Calculate precise geometric intersections between potentially millions of polygons
-
-4.  Create new geometries and copy attributes for all intersections
-
-5.  Validate the topological integrity of resulting geometries
-
-This involves many floating-point calculations, spatial index lookups, and memory operations.
-
-### **Hardware Differences**
-
-My AMD 7950x3D performs better than the M1 MacBook Pro because:
-
--   It has more cores (16 vs. 8-10 on M1 Pro/Max)
-
--   It has higher single-thread performance for this type of workload
-
--   It likely has more RAM and memory bandwidth
-
--   Desktop CPUs generally have better sustained performance under heavy loads
-
-### **Optimization Possibilities**
-
-To improve performance:
-
-1.  Use spatial indexing pre-filtering (already built into sf, but can be configured)
-
-2.  Simplify geometries before intersection to reduce computational complexity
-
-3.  Break the problem into smaller geographic tiles and process in parallel
-
-4.  Consider using specialized libraries like `lwgeom` for certain operations
-
-5.  Implement parallel processing with `future` and `furrr` packages
-
-The saveRDS approach we're using is a practical workaround since the dataset isn't changing between runs.
+Next up: fine-tuning the camera position (it’s tricky to center landmasses in 3D space), and then generating maps for the other states.
 
 ## Blender Pipeline
 
-🔁 Step 1: Exporting the OBJ from R
+The Blender export pipeline was partially successful. Several file formats exported cleanly from R, but the format that works best natively in Blender — the one with full material and geometry support — failed to render. I ended up with a 3D object I could rotate and inspect, but couldn’t meaningfully manipulate: no ability to animate spike growth, adjust materials, or work with the geometry dynamically. The ceiling was hit pretty quickly.
 
-In R, I used this snippet to export the current 3D view as an `.obj` file:
+If the goal is a cinematic, animated spike map, the better approach is to build it natively in Blender from scratch rather than exporting from rayshader. Blender also has the significant advantage of CUDA acceleration, which would make rendering considerably faster than rayshader’s CPU-bound pipeline.
 
-`rayshader::save_obj("outputs/models/nsw_spike_map.obj")`
+Where rayshader shines is that Rayshader maps are honest in a way Blender renders aren’t: the data transformation is explicit, the code is open, and someone can audit exactly how the spikes were generated. Blender gives you full creative control over lighting, camera, and materials — but that same freedom means the final image is harder to verify. One is data visualisation, the other is closer to data art.
 
-This also creates an `.mtl` (material) file and a `.png` texture image. I kept all these files in the same folder.
-
-### 📦 Step 2: Importing the OBJ into Blender
-
-1.  Open **Blender**.
-2.  Delete the default cube (press `X` to delete it).
-3.  Go to **File \> Import \> Wavefront (.obj)**.
-4.  Navigate to the folder with the `.obj`, `.mtl`, and texture image, and select the `.obj` file.
-5.  After import, press `0` on the numpad to switch to **Camera View**, and `N` to bring up the transform panel if needed.
-
-💡 *Tip: If the mesh looks weird or washed out, make sure you're in `Material Preview` or `Rendered` view (toggle in top-right corner).*
-
-------------------------------------------------------------------------
-
-### 💡 Step 3: Add Lighting
-
-1.  Go to the **Layout** workspace (default).
-2.  Select the default **light** in the scene (or add a new one: `Shift+A > Light > Area`).
-3.  In the **Properties Panel** on the right, click the **light bulb icon**.
-4.  Set `Power` to something high (e.g., 500W+ depending on your scale).
-5.  Adjust the `Color` and `Size` as needed.
-6.  Move the light with `G`, rotate it with `R`.
-
-💡 *Optional: Add multiple lights from different angles for soft shadows and highlights.*
-
-------------------------------------------------------------------------
-
-### 🎥 Step 4: Setup Camera
-
-1.  Select the **camera**, or add one (`Shift+A > Camera`).
-2.  Press `N` to open the sidebar, then use the **View \> Camera to View** option.
-3.  Move the camera (`G` to grab, `R` to rotate) until it frames your model nicely.
-
-------------------------------------------------------------------------
-
-### 🔄 Step 5: Animate a Simple Rotation
-
-Let’s make the spike map spin!
-
-1.  Select your imported model.
-2.  Go to frame **1** in the timeline.
-3.  Press `I` \> **Rotation** (this inserts a keyframe).
-4.  Go to frame **250**.
-5.  Press `R`, `Z`, `360`, then `Enter` (rotates the object 360° on the Z-axis).
-6.  Press `I` \> **Rotation** again.
-
-Boom — your object now rotates!
-
-------------------------------------------------------------------------
-
-### ⚙️ Step 6: Render Settings
-
-1.  Go to the **Render Properties** tab (camera icon).
-2.  Set **Render Engine** to `Cycles` or `Eevee`.
-3.  Go to **Output Properties** (printer icon):
-    -   Set resolution (e.g., 1920x1080)
-    -   Set frame rate (24 or 30 fps)
-    -   Set output file path and format (PNG, MP4, etc.)
-4.  Then **Render \> Render Animation**.
-
-------------------------------------------------------------------------
+A future project is to rebuild the same maps natively in Blender and compare the two workflows — the reproducibility and auditability of the R approach against the creative range and rendering power of Blender.
