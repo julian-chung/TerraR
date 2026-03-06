@@ -3,18 +3,21 @@
 # Script 03: Interactive camera tuning for spike maps
 # =============================================================
 #
-# Opens an rgl preview window for a single state so you can
-# dial in phi, theta, zoom, and zscale interactively.
+# Run line by line in RStudio (Cmd+Enter).
+# Sections 1-5 are setup — run once per session.
+# Section 6 opens the 3D scene — run once per state.
+# Section 7 is the tuning loop — edit values and re-run
+#   repeatedly until happy, then copy output to 02_render_maps.R.
 #
-# USAGE:
-#   1. Set tune_state and tune_zscale below
-#   2. Source this script — an rgl window will open
-#   3. Call adjust_camera(phi=, theta=, zoom=) to try angles
-#   4. Call print_settings() to copy values into state_settings
-#      in 02_render_maps.R
+# Preview images are saved to outputs/tuning_preview.png
+# and can be opened in RStudio's Files pane.
 # =============================================================
 
-options(rgl.useNULL = FALSE)  # ensure rgl window opens
+# =============================================================
+# 1. Dependencies
+# =============================================================
+
+options(rgl.useNULL = FALSE)  # must run before library(rgl)
 
 library(tidyverse)
 library(sf)
@@ -22,13 +25,18 @@ library(stars)
 library(rayshader)
 library(rgl)
 
-# --- Config: change these to tune a different state ---
+dir.create("outputs", showWarnings = FALSE)
 
-tune_state     <- "Victoria"
-tune_zscale    <- 10
-base_elevation <- 50
+# =============================================================
+# 2. Config — set your target state and zscale here
+# =============================================================
 
-# --- Load data ---
+tune_state  <- "Victoria"
+tune_zscale <- 10
+
+# =============================================================
+# 3. Load data
+# =============================================================
 
 state_pops <- readRDS("data/processed/state_pops.rds")
 
@@ -37,12 +45,12 @@ crsAU <- "+proj=aea +lat_0=0 +lon_0=132 +lat_1=-18 +lat_2=-36 +x_0=0 +y_0=0 +ell
 aus_states <- sf::st_read("data/boundaries/STE_2021_AUST_GDA2020.shp", quiet = TRUE) |>
   sf::st_transform(crs = crsAU)
 
-# --- Colour palette (mirrors 02_render_maps.R) ---
-
 palette_cols <- c("#f8f4e3", "#fceea7", "#f5c94c", "#e67e22", "#c0392b")
 texture      <- grDevices::colorRampPalette(palette_cols)(1024)
 
-# --- Helpers (mirrors 02_render_maps.R) ---
+# =============================================================
+# 4. Helper functions
+# =============================================================
 
 get_raster_dims <- function(bbox, base_size = 1000) {
   height_dist <- sf::st_distance(
@@ -81,21 +89,23 @@ make_state_matrix <- function(state_pop_sf, state_boundary_sf, base_elevation = 
   list(mat = final_mat, nx = dims$nx, ny = dims$ny)
 }
 
-# --- Build matrix and open preview ---
-# Uses base_size = 1000 for fast interactive rendering (vs 3000 for final output)
+# =============================================================
+# 5. Build matrix — run once per state (takes a moment)
+# =============================================================
 
 message("Processing: ", tune_state)
 
 state_pop_sf      <- state_pops[[tune_state]]
 state_boundary_sf <- aus_states |> dplyr::filter(STE_NAME21 == tune_state)
 
-data       <- make_state_matrix(state_pop_sf, state_boundary_sf, base_elevation)
+data       <- make_state_matrix(state_pop_sf, state_boundary_sf)
 height_mat <- log10(data$mat + 1)
 
-# Initial camera values — edit these or adjust interactively below
-.tune_phi   <- 65
-.tune_theta <- 0
-.tune_zoom  <- 0.70
+# =============================================================
+# 6. Open 3D scene — run once (re-run if you close the window)
+# =============================================================
+
+rgl::close3d()  # close any existing window first
 
 height_mat |>
   rayshader::height_shade(texture = texture) |>
@@ -108,32 +118,26 @@ height_mat |>
     shadowdepth     = 0,
     shadow_darkness = 0.95,
     windowsize      = c(800, 800),
-    phi             = .tune_phi,
-    zoom            = .tune_zoom,
-    theta           = .tune_theta,
     background      = "grey10"
   )
 
-# --- Interactive helpers ---
+# =============================================================
+# 7. Tune camera — edit values and re-run this whole block
+#    Preview saves to outputs/tuning_preview.png
+# =============================================================
 
-# Call this repeatedly to adjust the view. All args are optional —
-# omit any you don't want to change.
-adjust_camera <- function(phi = .tune_phi, theta = .tune_theta, zoom = .tune_zoom) {
-  .tune_phi   <<- phi
-  .tune_theta <<- theta
-  .tune_zoom  <<- zoom
-  rayshader::render_camera(phi = phi, zoom = zoom, theta = theta)
-  cat(sprintf("phi = %g, theta = %g, zoom = %g\n", phi, theta, zoom))
-}
+tune_phi   <- 65
+tune_theta <- 0
+tune_zoom  <- 0.70
 
-# Call this when happy with the view to get copy-pasteable settings.
-print_settings <- function() {
-  cat(sprintf(
-    '  "%s" = list(\n    phi = %g, theta = %g, zoom = %g, zscale = %g\n  ),\n',
-    tune_state, .tune_phi, .tune_theta, .tune_zoom, tune_zscale
-  ))
-}
+rayshader::render_camera(phi = tune_phi, zoom = tune_zoom, theta = tune_theta)
+rayshader::render_snapshot("outputs/tuning_preview.png")
 
-message("Ready. rgl window is open.")
-message("  adjust_camera(phi=, theta=, zoom=)  — update the view")
-message("  print_settings()                    — copy values to 02_render_maps.R")
+# =============================================================
+# 8. Print final settings — copy output into 02_render_maps.R
+# =============================================================
+
+cat(sprintf(
+  '  "%s" = list(\n    phi = %g, theta = %g, zoom = %g, zscale = %g\n  ),\n',
+  tune_state, tune_phi, tune_theta, tune_zoom, tune_zscale
+))

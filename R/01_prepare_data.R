@@ -25,11 +25,9 @@
 
 # --- Dependencies ---
 
-libs <- c("tidyverse", "sf", "stars")
-
-installed_libs <- libs %in% rownames(installed.packages())
-if (any(!installed_libs)) install.packages(libs[!installed_libs])
-invisible(lapply(libs, library, character.only = TRUE))
+library(tidyverse)
+library(sf)
+library(stars)
 
 # --- Paths ---
 
