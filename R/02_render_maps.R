@@ -16,11 +16,11 @@
 
 # --- Dependencies ---
 
-libs <- c("tidyverse", "sf", "stars", "rayshader", "rgl")
-
-installed_libs <- libs %in% rownames(installed.packages())
-if (any(!installed_libs)) install.packages(libs[!installed_libs])
-invisible(lapply(libs, library, character.only = TRUE))
+library(tidyverse)
+library(sf)
+library(stars)
+library(rayshader)
+library(rgl)
 
 dir.create("outputs/images", recursive = TRUE, showWarnings = FALSE)
 
@@ -69,6 +69,16 @@ state_settings <- list(
   )
 )
 
+# --- Load state boundaries ---
+# Used to create an elevated landmass cutout: cells inside the state boundary
+# are raised by base_elevation so the state "floats" above the dark background.
+
+crsAU <- "+proj=aea +lat_0=0 +lon_0=132 +lat_1=-18 +lat_2=-36 +x_0=0 +y_0=0 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+
+aus_states <- sf::st_read("data/boundaries/STE_2021_AUST_GDA2020.shp", quiet = TRUE) |>
+  sf::st_transform(crs = crsAU) |>
+  dplyr::filter(STE_NAME21 %in% names(state_settings))
+
 # =============================================================
 # Helper functions
 # =============================================================
@@ -96,28 +106,36 @@ get_raster_dims <- function(bbox, base_size = 3000) {
 }
 
 # Rasterize a state's population sf object and convert to a matrix.
-make_state_matrix <- function(state_pop_sf) {
+# Applies an elevated landmass cutout: cells inside the state boundary are
+# raised by base_elevation, cells outside remain NA (transparent in render).
+make_state_matrix <- function(state_pop_sf, state_boundary_sf, base_elevation = 50) {
   dims <- get_raster_dims(sf::st_bbox(state_pop_sf))
 
-  rast <- stars::st_rasterize(
+  pop_rast <- stars::st_rasterize(
     state_pop_sf |> dplyr::select(population, geom),
     nx = dims$nx,
     ny = dims$ny
   )
 
-  mat <- rast |>
-    as("Raster") |>
-    rayshader::raster_to_matrix()
+  boundary_rast <- stars::st_rasterize(state_boundary_sf, template = pop_rast)
 
-  list(mat = mat, nx = dims$nx, ny = dims$ny)
+  pop_mat      <- pop_rast      |> as("Raster") |> rayshader::raster_to_matrix()
+  boundary_mat <- boundary_rast |> as("Raster") |> rayshader::raster_to_matrix()
+
+  within    <- !is.na(boundary_mat)
+  final_mat <- matrix(NA_real_, nrow = nrow(pop_mat), ncol = ncol(pop_mat))
+  final_mat[within & !is.na(pop_mat)] <- base_elevation + pop_mat[within & !is.na(pop_mat)] + 0.1
+  final_mat[within &  is.na(pop_mat)] <- base_elevation
+
+  list(mat = final_mat, nx = dims$nx, ny = dims$ny)
 }
 
 # Render and save a spike map for one state.
-render_state <- function(state_name, state_pop_sf, settings, texture,
+render_state <- function(state_name, state_pop_sf, state_boundary_sf, settings, texture,
                          output_dir = "outputs/images", preview = FALSE) {
   message("Rendering: ", state_name)
 
-  data <- make_state_matrix(state_pop_sf)
+  data <- make_state_matrix(state_pop_sf, state_boundary_sf)
 
   # Log transform compresses extreme city spikes so smaller towns remain visible
   height_mat <- log10(data$mat + 1)
@@ -127,6 +145,7 @@ render_state <- function(state_name, state_pop_sf, settings, texture,
     rayshader::plot_3d(
       heightmap       = height_mat,
       solid           = TRUE,
+      solidcolor      = "#1A1A1A",
       soliddepth      = -150,
       zscale          = settings$zscale,
       shadowdepth     = 0,
@@ -176,10 +195,11 @@ render_state <- function(state_name, state_pop_sf, settings, texture,
 
 output_files <- lapply(names(state_settings), function(state_name) {
   render_state(
-    state_name   = state_name,
-    state_pop_sf = state_pops[[state_name]],
-    settings     = state_settings[[state_name]],
-    texture      = texture
+    state_name        = state_name,
+    state_pop_sf      = state_pops[[state_name]],
+    state_boundary_sf = aus_states |> dplyr::filter(STE_NAME21 == state_name),
+    settings          = state_settings[[state_name]],
+    texture           = texture
   )
 })
 
