@@ -2056,6 +2056,69 @@ Background rendering works, landmass masking works, and the slab depth adds a sa
 
 Next up: fine-tuning the camera position (it’s tricky to center landmasses in 3D space), and then generating maps for the other states.
 
+## Per-State Camera Tuning
+
+One thing that became obvious pretty quickly when rendering state maps: there is no universal camera angle.
+
+Australia’s states and territories vary enormously — not just in size, but in shape and orientation. Western Australia is a wide, roughly rectangular block. Queensland stretches diagonally and is dominated by coastal population hugging the southeast corner. The Northern Territory is tall and sparse. The ACT is tiny, dense, and almost circular. Tasmania is an island sitting below a vast ocean of empty space. What looks good for Victoria — compact, roughly rectangular, population concentrated in the south — looks completely wrong for a state like WA, where you’re zoomed out so far that Melbourne-sized cities would disappear.
+
+The camera parameters that matter are:
+
+- **phi** — the elevation angle (how high above the scene you’re looking from)
+- **theta** — the azimuth rotation (which direction you’re facing)
+- **zoom** — how close or far the camera sits
+- **zscale** — vertical exaggeration of the spikes (lower = taller spikes)
+
+Each of these needs to be dialled in per state. Getting the right combination is iterative — you set some values, look at the result, adjust, repeat.
+
+To handle this properly I built a dedicated tuning script (`R/03_tune_camera.R`). The workflow is:
+
+1. Set `tune_state` at the top of the script to whichever state you want to work on
+2. Run through the script line by line in RStudio — it processes the state matrix at a reduced resolution (1000px vs the 3000px used in final renders, so it’s faster) and opens a 3D preview
+3. In the tuning loop (Section 7), edit `tune_phi`, `tune_theta`, and `tune_zoom`, then re-run that block — it updates the camera and saves a quick snapshot to `outputs/tuning_preview.png`
+4. When happy, call `print_settings()` in the console — it outputs a ready-to-paste entry for the `state_settings` list in `02_render_maps.R`
+
+The separation between tuning and rendering keeps the batch script clean. Script 2 just reads the dialled-in settings and runs, no interactive fiddling required.
+
+## macOS Compatibility
+
+Worth noting for anyone trying to run this on macOS: the interactive rgl preview window — which is the natural environment for camera tuning in rayshader — does not work on macOS 26 Tahoe. It barely works on earlier versions.
+
+Here’s what happened when I tried to set this up on a MacBook running macOS 26.0.1.
+
+**Without XQuartz installed**, rgl fails to load entirely:
+
+```
+Error: unable to load shared object ‘rgl.so’:
+  Library not loaded: /opt/X11/lib/libGLU.1.dylib
+```
+
+rgl’s compiled binary links against `libGLU`, which lives inside XQuartz. No XQuartz, no rgl.
+
+**With XQuartz installed**, rgl loads, but the window fails to open:
+
+```
+X11 error: GLXBadContext
+Error in rgl::open3d(...): open failed
+```
+
+GLX is the OpenGL extension for X11. macOS 26 dropped native OpenGL support, so even with XQuartz present, the OpenGL context can’t be created and the window never appears. rgl even prints a warning about this explicitly in newer versions.
+
+The good news: `render_highquality()` is unaffected. It uses rayrender under the hood, which is a pure CPU-based path tracer — no OpenGL, no rgl window, no display required. Final renders work fine on macOS.
+
+For camera tuning on macOS, the workaround is to use the null device with `render_snapshot()`:
+
+```r
+options(rgl.useNULL = TRUE)
+# ... plot_3d() ...
+render_camera(phi = 65, theta = 0, zoom = 0.70)
+render_snapshot("outputs/tuning_preview.png")
+```
+
+This renders offscreen and saves a fast (non-raytraced) PNG you can inspect. It’s less immediate than dragging a live window, but it works. The tuning script (`03_tune_camera.R`) is structured around this approach.
+
+If you want a proper interactive window, a Linux or Windows machine with working OpenGL is the path of least resistance.
+
 ## Blender Pipeline
 
 The Blender export pipeline was partially successful. Several file formats exported cleanly from R, but the format that works best natively in Blender — the one with full material and geometry support — failed to render. I ended up with a 3D object I could rotate and inspect, but couldn’t meaningfully manipulate: no ability to animate spike growth, adjust materials, or work with the geometry dynamically. The ceiling was hit pretty quickly.
