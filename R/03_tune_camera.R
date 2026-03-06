@@ -17,8 +17,6 @@
 # 1. Dependencies
 # =============================================================
 
-options(rgl.useNULL = FALSE)  # must run before library(rgl)
-
 library(tidyverse)
 library(sf)
 library(stars)
@@ -104,8 +102,6 @@ height_mat <- log10(data$mat + 1)
 # =============================================================
 # 6. Open 3D scene — run once (re-run if you close the window)
 # =============================================================
-
-rgl::close3d()  # close any existing window first
 
 height_mat |>
   rayshader::height_shade(texture = texture) |>
