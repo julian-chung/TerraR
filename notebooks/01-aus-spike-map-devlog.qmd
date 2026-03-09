@@ -2056,6 +2056,23 @@ Background rendering works, landmass masking works, and the slab depth adds a sa
 
 Next up: fine-tuning the camera position (it’s tricky to center landmasses in 3D space), and then generating maps for the other states.
 
+### The Scale Mismatch Problem (and the spike_scale fix)
+
+The base elevation strategy worked visually, but created a subtle problem that only became obvious later when moving to a Windows machine and regenerating the maps: the spikes had disappeared.
+
+The cause was a scale mismatch between `base_elevation` and the log-transformed population values. The log10 transform of population data produces values roughly in the range 0–5 (log10(100,000) ≈ 5). But `base_elevation` was set to 50 — ten times larger. When you build the height matrix as `base_elevation + log10(population + 1)`, the result ranges from 50 to about 54.7. The spikes are real, but they’re only a 9% variation sitting on top of a giant platform. At any normal camera angle and zscale, they’re invisible.
+
+The original code (before the base_elevation refactor) didn’t have this problem because it had no base platform at all — the height matrix was just `log10(population + 1)`, ranging from 0 to ~5, and the spikes occupied the full height range.
+
+The fix was to introduce a `spike_scale` multiplier that’s applied to the log-transformed population before the base elevation is added:
+
+```r
+log_pop <- log10(pop_mat + 1) * spike_scale
+final_mat[within] <- base_elevation + log_pop[within]
+```
+
+With `spike_scale = 10`, the spike heights reach up to ~47 units above the base of 50 — roughly equal in magnitude, which gives the platform enough visual weight to be clear at full zoom-out while the spikes are still prominent. Both parameters can now be tuned independently per state.
+
 ## Per-State Camera Tuning
 
 One thing that became obvious pretty quickly when rendering state maps: there is no universal camera angle.

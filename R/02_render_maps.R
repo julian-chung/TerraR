@@ -44,28 +44,28 @@ texture      <- grDevices::colorRampPalette(palette_cols)(1024)
 
 state_settings <- list(
   "New South Wales" = list(
-    phi = 50, theta = -0.5, zoom = 0.70, zscale = 15
+    phi = 50, theta = -0.5, zoom = 0.70, zscale = 15, spike_scale = 10
   ),
   "Victoria" = list(
-    phi = 65, theta = -0.5, zoom = 0.70, zscale = 10
+    phi = 65, theta = -0.5, zoom = 0.70, zscale = 10, spike_scale = 10
   ),
   "Queensland" = list(
-    phi = 55, theta = -20,  zoom = 0.68, zscale = 10
+    phi = 55, theta = -20,  zoom = 0.68, zscale = 10, spike_scale = 10
   ),
   "South Australia" = list(
-    phi = 65, theta = -10,  zoom = 0.60, zscale = 10
+    phi = 65, theta = -10,  zoom = 0.60, zscale = 10, spike_scale = 10
   ),
   "Western Australia" = list(
-    phi = 60, theta =  0,   zoom = 0.75, zscale = 10
+    phi = 60, theta =  0,   zoom = 0.75, zscale = 10, spike_scale = 10
   ),
   "Tasmania" = list(
-    phi = 45, theta =  0,   zoom = 0.70, zscale = 10
+    phi = 45, theta =  0,   zoom = 0.70, zscale = 10, spike_scale = 10
   ),
   "Northern Territory" = list(
-    phi = 55, theta =  0,   zoom = 0.75, zscale = 10
+    phi = 55, theta =  0,   zoom = 0.75, zscale = 10, spike_scale = 10
   ),
   "Australian Capital Territory" = list(
-    phi = 60, theta =  0,   zoom = 0.70, zscale = 10
+    phi = 60, theta =  0,   zoom = 0.70, zscale = 10, spike_scale = 10
   )
 )
 
@@ -108,7 +108,7 @@ get_raster_dims <- function(bbox, base_size = 3000) {
 # Rasterize a state's population sf object and convert to a matrix.
 # Applies an elevated landmass cutout: cells inside the state boundary are
 # raised by base_elevation, cells outside remain NA (transparent in render).
-make_state_matrix <- function(state_pop_sf, state_boundary_sf, base_elevation = 50) {
+make_state_matrix <- function(state_pop_sf, state_boundary_sf, base_elevation = 50, spike_scale = 10) {
   dims <- get_raster_dims(sf::st_bbox(state_pop_sf))
 
   pop_rast <- stars::st_rasterize(
@@ -124,10 +124,15 @@ make_state_matrix <- function(state_pop_sf, state_boundary_sf, base_elevation = 
 
   within    <- !is.na(boundary_mat)
   final_mat <- matrix(NA_real_, nrow = nrow(pop_mat), ncol = ncol(pop_mat))
-  final_mat[within & !is.na(pop_mat)] <- base_elevation + pop_mat[within & !is.na(pop_mat)] + 0.1
+  color_mat <- matrix(NA_real_, nrow = nrow(pop_mat), ncol = ncol(pop_mat))
+  log_pop   <- log10(pop_mat + 1) * spike_scale
+  final_mat[within & !is.na(pop_mat)] <- base_elevation + log_pop[within & !is.na(pop_mat)]
   final_mat[within &  is.na(pop_mat)] <- base_elevation
+  # colour matrix uses plain log10 so the texture gradient spans the full population range
+  color_mat[within & !is.na(pop_mat)] <- log10(pop_mat[within & !is.na(pop_mat)] + 1)
+  color_mat[within &  is.na(pop_mat)] <- 0
 
-  list(mat = final_mat, nx = dims$nx, ny = dims$ny)
+  list(mat = final_mat, color_mat = color_mat, nx = dims$nx, ny = dims$ny)
 }
 
 # Render and save a spike map for one state.
@@ -135,12 +140,12 @@ render_state <- function(state_name, state_pop_sf, state_boundary_sf, settings, 
                          output_dir = "outputs/images", preview = FALSE) {
   message("Rendering: ", state_name)
 
-  data <- make_state_matrix(state_pop_sf, state_boundary_sf)
+  data <- make_state_matrix(state_pop_sf, state_boundary_sf, spike_scale = settings$spike_scale)
 
-  # Log transform compresses extreme city spikes so smaller towns remain visible
-  height_mat <- log10(data$mat + 1)
+  height_mat <- data$mat        # base_elevation + log(pop)*spike_scale — drives spike geometry
+  color_mat  <- data$color_mat  # plain log10(pop) — spreads colour gradient across full population range
 
-  height_mat |>
+  color_mat |>
     rayshader::height_shade(texture = texture) |>
     rayshader::plot_3d(
       heightmap       = height_mat,
