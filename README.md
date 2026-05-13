@@ -2,17 +2,48 @@
 
 3D population spike maps of Australia's states and territories, rendered in R using rayshader and rayrender.
 
-Each map shows population density as spikes on an elevated platform.
+Each map shows population density as spikes on an elevated platform. Rendered at 5000 px · 2048 samples · sobol path tracing.
+
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE) &nbsp;&nbsp; [⬇ Download full-resolution renders (v0.1)](https://github.com/julian-chung/TerraR/releases/tag/v0.1)
 
 ---
 
 ## Gallery
 
-![New South Wales](assets/readme-nsw.png)
-
-![Victoria](assets/readme-victoria.png)
-
-![Tasmania](assets/readme-tasmania.png)
+<table>
+  <tr>
+    <td><img src="assets/readme-nsw.png" alt="New South Wales"/></td>
+    <td><img src="assets/readme-victoria.png" alt="Victoria"/></td>
+  </tr>
+  <tr>
+    <td align="center"><em>New South Wales</em></td>
+    <td align="center"><em>Victoria</em></td>
+  </tr>
+  <tr>
+    <td><img src="assets/devlog-qld.png" alt="Queensland"/></td>
+    <td><img src="assets/devlog-sa.png" alt="South Australia"/></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Queensland</em></td>
+    <td align="center"><em>South Australia</em></td>
+  </tr>
+  <tr>
+    <td><img src="assets/devlog-wa.png" alt="Western Australia"/></td>
+    <td><img src="assets/readme-tasmania.png" alt="Tasmania"/></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Western Australia</em></td>
+    <td align="center"><em>Tasmania</em></td>
+  </tr>
+  <tr>
+    <td><img src="assets/devlog-nt.png" alt="Northern Territory"/></td>
+    <td><img src="assets/devlog-act.png" alt="Australian Capital Territory"/></td>
+  </tr>
+  <tr>
+    <td align="center"><em>Northern Territory</em></td>
+    <td align="center"><em>Australian Capital Territory</em></td>
+  </tr>
+</table>
 
 ---
 
@@ -66,7 +97,7 @@ Output images are saved to `outputs/images/` as `state-spike-map-{State-Name}.pn
 
 **Resource requirements**
 
-Rendering at 5000px is CPU and memory intensive. Each state render peaks at approximately 35GB RAM and saturates all available CPU cores for several minutes. The full 8-state batch takes several hours.
+Rendering at 5000 px is CPU and memory intensive. Each state render peaks at approximately 35 GB RAM and saturates all available CPU cores for several minutes. The full 8-state batch takes several hours. These renders were produced on a Ryzen 9 7950X3D (16 cores / 32 threads, 64 GB RAM).
 
 ---
 
