@@ -13,6 +13,7 @@
 #   2. ABS State/Territory Boundaries (STE_2021_AUST_GDA2020.shp)
 #      2021 Census boundaries from the Australian Bureau of Statistics.
 #      Included in data/boundaries/
+#      Download from: https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files
 #
 # OUTPUT:
 #   data/processed/state_pops.rds
@@ -78,3 +79,4 @@ if (file.exists(cache_path)) {
 }
 
 message("Data ready. Run 02_render_maps.R to generate visualizations.")
+

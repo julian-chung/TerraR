@@ -22,5 +22,8 @@ outputs/images/
 *.pdf
 *.mp4
 
+# Devlog / notebooks — kept local until writeup is complete
+notebooks/
+
 # OS Files
 .DS_Store
