@@ -22,6 +22,9 @@ outputs/images/
 *.pdf
 *.mp4
 
+# Allow committed web assets
+!assets/*.png
+
 # Devlog / notebooks — kept local until writeup is complete
 notebooks/
 
