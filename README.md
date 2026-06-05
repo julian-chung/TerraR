@@ -49,7 +49,7 @@ Each map shows population density as spikes on an elevated platform. Rendered at
 
 ## How it works
 
-Population data from the [Kontur](https://kontur.io) 400m hexagonal grid is clipped to each state boundary and rasterized into a height matrix. Two separate matrices drive the render: spike height uses a `sqrt(population)` transform so Sydney towers dramatically over regional centres, while the colour gradient uses `log10(population)` to spread the colour palette across the full population range.
+Population data from the [Kontur](https://kontur.io) 400m hexagonal grid is clipped to each state boundary and rasterized into a height matrix.
 
 The state platform is built by rasterizing the ABS boundary as a mask and raising all within-state cells to a fixed base elevation. Offshore islands (Lord Howe Island for NSW, for example) are excluded by selecting only the largest polygon from each state's boundary geometry, which keeps the frame centred on the mainland.
 
