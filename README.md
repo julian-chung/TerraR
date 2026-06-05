@@ -51,7 +51,7 @@ Each map shows population density as spikes on an elevated platform. Rendered at
 
 Population data from the [Kontur](https://kontur.io) 400m hexagonal grid is clipped to each state boundary and rasterized into a height matrix.
 
-The state platform is built by rasterizing the ABS boundary as a mask and raising all within-state cells to a fixed base elevation. Offshore islands (Lord Howe Island for NSW, for example) are excluded by selecting only the largest polygon from each state's boundary geometry, which keeps the frame centred on the mainland.
+The state platform is built by rasterizing the ABS boundary as a mask and raising all within-state cells to a fixed base elevation. Offshore islands (e.g. Lord Howe Island) are excluded by selecting only the largest polygon from each state's boundary geometry, which keeps the frame centred on the mainland.
 
 Rendering uses `rayrender`, a CPU-based path tracer. At 5000px, each image is approximately 20 megapixels.
 
@@ -60,7 +60,7 @@ Rendering uses `rayrender`, a CPU-based path tracer. At 5000px, each image is ap
 ## Data sources
 
 **[Kontur Population Dataset](https://data.humdata.org/dataset/kontur-population-australia)**
-High-resolution 400m hexagonal population grid for Australia, produced by Kontur and distributed via the Humanitarian Data Exchange. Download the GeoPackage and place it at `data/raw/kontur_population_AU_20231101.gpkg`.
+400m hexagonal population grid for Australia by Kontur. Download the GeoPackage and place it at `data/raw/kontur_population_AU_20231101.gpkg`.
 
 **[ABS State and Territory Boundaries](https://www.abs.gov.au/statistics/standards/australian-statistical-geography-standard-asgs-edition-3/jul2021-jun2026/access-and-downloads/digital-boundary-files)**
 2021 Census digital boundary files from the Australian Bureau of Statistics. Included in `data/boundaries/`.
